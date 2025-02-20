@@ -27,11 +27,21 @@ if ! command -v protoc-gen-go-grpc &> /dev/null; then
     go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.3.0
 fi
 
+if ! command -v protoc-gen-grpc-gateway &> /dev/null; then
+    echo "Installing protoc-gen-grpc-gateway..."
+    go install github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-grpc-gateway@v2.19.1
+fi
+
 # Generate proto files
 protoc \
     --proto_path=. \
+    --proto_path=/usr/local/include \
     --go_out=out \
     --go-grpc_out=out \
+    --grpc-gateway_out=out \
+    --grpc-gateway_opt=logtostderr=true \
+    --grpc-gateway_opt=allow_delete_body=true \
+    --grpc-gateway_opt=generate_unbound_methods=true \
     proto/*.proto
 
 go run cmd/generator/main.go -proto="proto/*.proto" -output=out
