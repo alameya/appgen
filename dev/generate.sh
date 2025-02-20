@@ -14,12 +14,13 @@ mkdir -p out/internal/proto
 
 # Generate proto files first
 echo "Generating proto files..."
-protoc --go_out=out/internal/proto \
+cd proto
+protoc --go_out=../out/internal/proto \
     --go_opt=paths=source_relative \
-    --go-grpc_out=out/internal/proto \
+    --go-grpc_out=../out/internal/proto \
     --go-grpc_opt=paths=source_relative \
-    --proto_path=proto \
-    proto/*.proto
+    *.proto
+cd ..
 
 # Generate code
 echo "Generating code..."
