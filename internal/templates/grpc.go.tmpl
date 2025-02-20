@@ -21,7 +21,7 @@ func NewServer(repo *repository.Repository) *Server {
 func (s *Server) Create(ctx context.Context, req *proto.Create{{.Name}}Request) (*proto.{{.Name}}, error) {
     item := &models.{{.Name}}{
         {{range .Fields}}
-        {{if .Name != "Id"}}
+        {{if (.Name != "Id" && .Name != "id")}}
         {{toCamel(.Name)}}: req.{{toCamel(.Name)}},
         {{end}}
         {{end}}
@@ -60,8 +60,9 @@ func (s *Server) List(ctx context.Context, req *proto.List{{.Name}}Request) (*pr
 
 func convert{{.Name}}ToProto(item *models.{{.Name}}) *proto.{{.Name}} {
     return &proto.{{.Name}}{
+        Id: item.Id,
         {{range .Fields}}
-        {{if .Name != "Id"}}
+        {{if (.Name != "Id" && .Name != "id")}}
         {{toCamel(.Name)}}: item.{{toCamel(.Name)}},
         {{end}}
         {{end}}
