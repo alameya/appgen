@@ -41,13 +41,15 @@ func (g *Generator) GenerateFromProto(protoPath, outputDir string) error {
 func (g *Generator) getGoType(field *descriptorpb.FieldDescriptorProto) string {
 	switch field.GetType() {
 	case descriptorpb.FieldDescriptorProto_TYPE_INT64:
-		return "INT64"
+		return "int64"
 	case descriptorpb.FieldDescriptorProto_TYPE_STRING:
-		return "STRING"
+		return "string"
 	case descriptorpb.FieldDescriptorProto_TYPE_BOOL:
-		return "BOOL"
+		return "bool"
+	case descriptorpb.FieldDescriptorProto_TYPE_DOUBLE:
+		return "float64"
 	default:
-		return "STRING"
+		return "string"
 	}
 }
 
