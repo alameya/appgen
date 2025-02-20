@@ -57,6 +57,7 @@ func (t *TemplateGenerator) Generate(models []*Model, outputDir string) error {
 		"migrate.sh.tmpl",
 		"swagger.yaml.tmpl",
 		"grpc.go.tmpl",
+		"repository.go.tmpl",
 	}
 
 	log.Printf("Loading templates: %v", files)
@@ -75,21 +76,6 @@ func (t *TemplateGenerator) Generate(models []*Model, outputDir string) error {
 		t.templates[f] = tmpl
 		log.Printf("Loaded template: %s", f)
 	}
-
-	// Загружаем шаблон репозитория отдельно
-	repoTmpl, err := template.New("repository.go.tmpl").
-		Funcs(template.FuncMap{
-			"toLower":      strings.ToLower,
-			"toCamel":      strcase.ToCamel,
-			"toLowerCamel": strcase.ToLowerCamel,
-			"hasSuffix":    strings.HasSuffix,
-		}).
-		ParseFiles(filepath.Join("internal/templates/repository", "repository.go.tmpl"))
-	if err != nil {
-		return fmt.Errorf("failed to parse repository template: %w", err)
-	}
-	t.templates["repository.go.tmpl"] = repoTmpl
-	log.Printf("Loaded template: repository.go.tmpl")
 
 	// Создаем общие директории
 	commonDirs := []string{
@@ -198,24 +184,6 @@ func (t *TemplateGenerator) generateFilesForModel(model *Model, outputDir string
 			if err := os.WriteFile(path, buf.Bytes(), 0644); err != nil {
 				return fmt.Errorf("failed to write file %s: %w", path, err)
 			}
-		}
-	}
-
-	return nil
-}
-
-func (t *TemplateGenerator) generateModelFiles(model *Model, outputDir string) error {
-	files := map[string]string{
-		"repository_model.go.tmpl": filepath.Join("internal/repository", strings.ToLower(model.Name), "repository.go"),
-		"handler.go.tmpl":          filepath.Join("internal/handler", strings.ToLower(model.Name), "handler.go"),
-		"service.go.tmpl":          filepath.Join("internal/service", strings.ToLower(model.Name), "service.go"),
-		"models.go.tmpl":           filepath.Join("internal/models", strings.ToLower(model.Name)+".go"),
-		"grpc.go.tmpl":             filepath.Join("internal/grpc", strings.ToLower(model.Name), "server.go"),
-	}
-
-	for tmpl, path := range files {
-		if err := t.generateFromTemplate(tmpl, filepath.Join(outputDir, path), model); err != nil {
-			return fmt.Errorf("failed to generate %s: %w", path, err)
 		}
 	}
 
