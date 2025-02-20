@@ -55,17 +55,17 @@ func (g *Generator) getGoType(field *descriptorpb.FieldDescriptorProto) string {
 
 func (g *Generator) parseField(field *descriptorpb.FieldDescriptorProto) Field {
 	name := field.GetName()
-	fieldType := field.GetType().String()
+	goType := g.getGoType(field)
 
 	var sqlType string
-	switch fieldType {
-	case "TYPE_INT64":
+	switch field.GetType() {
+	case descriptorpb.FieldDescriptorProto_TYPE_INT64:
 		sqlType = "BIGINT"
-	case "TYPE_STRING":
+	case descriptorpb.FieldDescriptorProto_TYPE_STRING:
 		sqlType = "TEXT"
-	case "TYPE_BOOL":
+	case descriptorpb.FieldDescriptorProto_TYPE_BOOL:
 		sqlType = "BOOLEAN"
-	case "TYPE_DOUBLE":
+	case descriptorpb.FieldDescriptorProto_TYPE_DOUBLE:
 		sqlType = "DOUBLE PRECISION"
 	default:
 		sqlType = "TEXT"
@@ -73,7 +73,7 @@ func (g *Generator) parseField(field *descriptorpb.FieldDescriptorProto) Field {
 
 	return Field{
 		Name:     strcase.ToCamel(name),
-		Type:     g.getGoType(field),
+		Type:     goType,
 		JsonName: name,
 		DbName:   name,
 		SqlType:  sqlType,
