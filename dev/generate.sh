@@ -28,7 +28,15 @@ PGPASSWORD=postgres psql -h localhost -U postgres -d postgres -f migrations/*.sq
 # Run migrations
 ./scripts/migrate.sh up
 
+# Commit and push generated code
+echo "Committing and pushing changes..."
+cd ..
+git add .
+git commit -m "Update generated code: $(date '+%Y-%m-%d %H:%M:%S')" || true
+git push origin main || true
+
 echo "Starting the service..."
+cd out
 go run cmd/main.go &
 SERVICE_PID=$!
 
@@ -38,4 +46,7 @@ trap 'echo "Stopping service..."; kill $SERVICE_PID; exit' INT
 # Wait for service to finish (it won't unless interrupted)
 wait $SERVICE_PID
 
-echo "Done! You can now run the server with: cd out && go run cmd/main.go" 
+echo "Done! You can now run the server with: cd out && go run cmd/main.go"
+
+# Создаем директорию для API документации
+mkdir -p out/api 

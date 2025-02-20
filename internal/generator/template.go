@@ -117,6 +117,7 @@ func (t *TemplateGenerator) Generate(models []*Model, outputDir string) error {
 		"env.tmpl":                     filepath.Join(outputDir, ".env"),
 		"migrate.sh.tmpl":              filepath.Join(outputDir, "scripts", "migrate.sh"),
 		"repository.go.tmpl":           filepath.Join(outputDir, "internal", "repository", "repository.go"),
+		"swagger.yaml.tmpl":            filepath.Join(outputDir, "api", "swagger.yaml"),
 	}
 
 	// Генерируем общие файлы
