@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package location;
 
-option go_package = "app/internal/proto/location";
+option go_package = "app/internal/proto;proto";
 
 service LocationService {
     rpc Create(CreateLocationRequest) returns (Location) {}

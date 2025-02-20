@@ -13,6 +13,7 @@ import (
 	"google.golang.org/grpc"
 
 	"app/internal/repository"
+	"app/internal/proto"
 	{{range .}}
 	{{toLower .Name}}Proto "app/internal/proto/{{toLower .Name}}"
 	{{toLower .Name}}Handler "app/internal/handler/{{toLower .Name}}"
