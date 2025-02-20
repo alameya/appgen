@@ -1,0 +1,67 @@
+package grpc
+
+import (
+    "context"
+    "fmt"
+    "net"
+
+    "google.golang.org/grpc"
+    "app/internal/proto/{{toLower .Name}}"
+    "app/internal/repository"
+    "app/internal/models"
+)
+
+type Server struct {
+    {{toLower .Name}}.Unimplemented{{.Name}}ServiceServer
+    repo *repository.Repository
+}
+
+func NewServer(repo *repository.Repository) *Server {
+    return &Server{repo: repo}
+}
+
+func (s *Server) Create(ctx context.Context, req *pb.Create{{.Name}}Request) (*pb.{{.Name}}, error) {
+    item := &models.{{.Name}}{
+        {{range .Fields}}
+        {{if ne .Name "Id"}}{{toCamel .Name}}: req.Get{{toCamel .Name}}(),{{end}}
+        {{end}}
+    }
+
+    result, err := s.repo.{{.Name}}.Create(ctx, item)
+    if err != nil {
+        return nil, fmt.Errorf("failed to create {{toLower .Name}}: %w", err)
+    }
+
+    return convert{{.Name}}ToProto(result), nil
+}
+
+func (s *Server) Get(ctx context.Context, req *pb.Get{{.Name}}Request) (*pb.{{.Name}}, error) {
+    result, err := s.repo.{{.Name}}.Get(ctx, req.GetId())
+    if err != nil {
+        return nil, fmt.Errorf("failed to get {{toLower .Name}}: %w", err)
+    }
+
+    return convert{{.Name}}ToProto(result), nil
+}
+
+func (s *Server) List(ctx context.Context, req *pb.List{{.Name}}Request) (*pb.List{{.Name}}Response, error) {
+    results, err := s.repo.{{.Name}}.List(ctx)
+    if err != nil {
+        return nil, fmt.Errorf("failed to list {{toLower .Name}}s: %w", err)
+    }
+
+    items := make([]*pb.{{.Name}}, len(results))
+    for i, item := range results {
+        items[i] = convert{{.Name}}ToProto(item)
+    }
+
+    return &pb.List{{.Name}}Response{Items: items}, nil
+}
+
+func convert{{.Name}}ToProto(item *models.{{.Name}}) *pb.{{.Name}} {
+    return &pb.{{.Name}}{
+        {{range .Fields}}
+        {{toCamel .Name}}: item.{{toCamel .Name}},
+        {{end}}
+    }
+} 

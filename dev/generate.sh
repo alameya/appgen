@@ -10,6 +10,16 @@ rm -rf out/
 # Create required directories
 echo "Creating directories..."
 mkdir -p out/api
+mkdir -p out/internal/proto
+
+# Generate proto files first
+echo "Generating proto files..."
+protoc --go_out=out/internal/proto \
+    --go_opt=paths=source_relative \
+    --go-grpc_out=out/internal/proto \
+    --go-grpc_opt=paths=source_relative \
+    --proto_path=proto \
+    proto/*.proto
 
 # Generate code
 echo "Generating code..."
@@ -50,8 +60,4 @@ trap 'echo "Stopping service..."; kill $SERVICE_PID; exit' INT
 # Wait for service to finish (it won't unless interrupted)
 wait $SERVICE_PID
 
-echo "Done! You can now run the server with: cd out && go run cmd/main.go"
-
-# Создаем директорию для API документации
-echo "Creating directories..."
-mkdir -p out/api 
+echo "Done! You can now run the server with: cd out && go run cmd/main.go" 

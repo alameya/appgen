@@ -30,6 +30,7 @@ func (t *TemplateGenerator) Generate(models []*Model, outputDir string) error {
 		filepath.Join(outputDir, "internal", "service"),
 		filepath.Join(outputDir, "internal", "repository"),
 		filepath.Join(outputDir, "internal", "models"),
+		filepath.Join(outputDir, "internal", "grpc"),
 		filepath.Join(outputDir, "migrations"),
 	}
 
@@ -55,6 +56,7 @@ func (t *TemplateGenerator) Generate(models []*Model, outputDir string) error {
 		"env.tmpl",
 		"migrate.sh.tmpl",
 		"swagger.yaml.tmpl",
+		"grpc.go.tmpl",
 	}
 
 	log.Printf("Loading templates: %v", files)
@@ -95,6 +97,7 @@ func (t *TemplateGenerator) Generate(models []*Model, outputDir string) error {
 		filepath.Join(outputDir, "scripts"),
 		filepath.Join(outputDir, "migrations"),
 		filepath.Join(outputDir, "internal", "repository"),
+		filepath.Join(outputDir, "internal", "proto"),
 	}
 
 	for _, dir := range commonDirs {
@@ -159,6 +162,7 @@ func (t *TemplateGenerator) generateFilesForModel(model *Model, outputDir string
 		filepath.Join(outputDir, "internal", "service", strings.ToLower(model.Name)),
 		filepath.Join(outputDir, "internal", "repository", strings.ToLower(model.Name)),
 		filepath.Join(outputDir, "internal", "models"),
+		filepath.Join(outputDir, "internal", "grpc", strings.ToLower(model.Name)),
 		filepath.Join(outputDir, "migrations"),
 	}
 
@@ -172,17 +176,18 @@ func (t *TemplateGenerator) generateFilesForModel(model *Model, outputDir string
 	now := time.Now()
 	version := now.Format("20060102150405") // YYYYMMDDHHMMSS
 
-	// Маппинг шаблонов к путям файлов для конкретной модели
-	fileMapping := map[string]string{
+	// Генерируем файлы для модели
+	files := map[string]string{
 		"repository_model.go.tmpl": filepath.Join(outputDir, "internal", "repository", strings.ToLower(model.Name), "repository.go"),
 		"handler.go.tmpl":          filepath.Join(outputDir, "internal", "handler", strings.ToLower(model.Name), "handler.go"),
 		"service.go.tmpl":          filepath.Join(outputDir, "internal", "service", strings.ToLower(model.Name), "service.go"),
 		"models.go.tmpl":           filepath.Join(outputDir, "internal", "models", strings.ToLower(model.Name)+".go"),
 		"migration.sql.tmpl":       filepath.Join(outputDir, "migrations", fmt.Sprintf("%s%02d_create_%s.sql", version, modelIndex+1, strings.ToLower(model.Name))),
+		"grpc.go.tmpl":             filepath.Join(outputDir, "internal", "grpc", strings.ToLower(model.Name), "server.go"),
 	}
 
 	// Генерация файлов для модели
-	for name, path := range fileMapping {
+	for name, path := range files {
 		if tmpl, ok := t.templates[name]; ok {
 			var buf bytes.Buffer
 			if err := tmpl.Execute(&buf, model); err != nil {

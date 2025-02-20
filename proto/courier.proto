@@ -2,7 +2,30 @@ syntax = "proto3";
 
 package courier;
 
-option go_package = "generator/proto";
+option go_package = "app/internal/proto";
+
+service CourierService {
+    rpc Create(CreateCourierRequest) returns (Courier) {}
+    rpc Get(GetCourierRequest) returns (Courier) {}
+    rpc List(ListCourierRequest) returns (ListCourierResponse) {}
+}
+
+message CreateCourierRequest {
+    string name = 1;
+    string phone = 2;
+    string email = 3;
+    string status = 4;
+}
+
+message GetCourierRequest {
+    int64 id = 1;
+}
+
+message ListCourierRequest {}
+
+message ListCourierResponse {
+    repeated Courier items = 1;
+}
 
 message Courier {
     int64 id = 1;

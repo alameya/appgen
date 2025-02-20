@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"strings"
 
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protodesc"
@@ -55,8 +56,15 @@ func (p *Parser) Parse(protoPath string) ([]*Model, error) {
 	messages := desc.Messages()
 	for i := 0; i < messages.Len(); i++ {
 		message := messages.Get(i)
+		name := string(message.Name())
+
+		// Пропускаем сообщения запросов и ответов
+		if strings.HasSuffix(name, "Request") || strings.HasSuffix(name, "Response") {
+			continue
+		}
+
 		model := &Model{
-			Name:   string(message.Name()),
+			Name:   name,
 			Fields: make([]Field, 0, message.Fields().Len()),
 		}
 
