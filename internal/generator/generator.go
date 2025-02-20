@@ -65,6 +65,8 @@ func (g *Generator) parseField(field *descriptorpb.FieldDescriptorProto) Field {
 		sqlType = "TEXT"
 	case "TYPE_BOOL":
 		sqlType = "BOOLEAN"
+	case "TYPE_DOUBLE":
+		sqlType = "DOUBLE PRECISION"
 	default:
 		sqlType = "TEXT"
 	}

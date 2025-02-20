@@ -58,15 +58,9 @@ func (s *Server) List(ctx context.Context, req *proto.List{{.Name}}Request) (*pr
 }
 
 func convert{{.Name}}ToProto(item *models.{{.Name}}) *proto.{{.Name}} {
-    {{range .Fields}}
-    {{if eq .Type "float64"}}
-    {{toLower .Name}}Val, _ := strconv.ParseFloat(item.{{toCamel .Name}}, 64)
-    {{end}}
-    {{end}}
     return &proto.{{.Name}}{
         {{range .Fields}}
-        {{if eq .Type "float64"}}{{toCamel .Name}}: {{toLower .Name}}Val,
-        {{else}}{{toCamel .Name}}: item.{{toCamel .Name}},{{end}}
+        {{toCamel .Name}}: item.{{toCamel .Name}},
         {{end}}
     }
 } 
