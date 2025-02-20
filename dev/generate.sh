@@ -39,9 +39,6 @@ echo "Running migrations..."
 # Используем существующую базу postgres
 PGPASSWORD=postgres psql -h localhost -U postgres -d postgres -f migrations/*.sql
 
-# Run migrations
-./scripts/migrate.sh up
-
 # Commit and push generated code
 echo "Committing and pushing changes..."
 cd ..

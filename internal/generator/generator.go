@@ -2,6 +2,10 @@ package generator
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
+
+	"github.com/CloudyKit/jet/v6"
 )
 
 type Generator struct {
@@ -28,9 +32,48 @@ func (g *Generator) GenerateFromProtoFiles(protoFiles []string, outputDir string
 		allModels = append(allModels, models...)
 	}
 
-	return g.template.Generate(allModels, outputDir)
+	// Генерируем общие файлы
+	if err := g.generateCommonFiles(allModels, outputDir); err != nil {
+		return err
+	}
+
+	// Генерируем файлы для каждой модели
+	for i, model := range allModels {
+		if err := g.template.generateFilesForModel(model, outputDir, i); err != nil {
+			return fmt.Errorf("failed to generate files for model %s: %w", model.Name, err)
+		}
+	}
+
+	return nil
 }
 
 func (g *Generator) GenerateFromProto(protoPath, outputDir string) error {
 	return g.GenerateFromProtoFiles([]string{protoPath}, outputDir)
+}
+
+func (g *Generator) generateCommonFiles(models []*Model, outputDir string) error {
+	commonFiles := map[string]string{
+		"main.go.tmpl":            filepath.Join(outputDir, "cmd", "app", "main.go"),
+		"go.mod.tmpl":             filepath.Join(outputDir, "go.mod"),
+		"docker-compose.yml.tmpl": filepath.Join(outputDir, "docker-compose.yml"),
+		"Dockerfile.tmpl":         filepath.Join(outputDir, "Dockerfile"),
+		"env.tmpl":                filepath.Join(outputDir, ".env"),
+		"repository.go.tmpl":      filepath.Join(outputDir, "internal", "repository", "repository.go"),
+	}
+
+	// Генерируем каждый файл из шаблона
+	for tmpl, outPath := range commonFiles {
+		// Создаем необходимые директории
+		if err := os.MkdirAll(filepath.Dir(outPath), 0755); err != nil {
+			return fmt.Errorf("failed to create directory for %s: %w", outPath, err)
+		}
+
+		// Генерируем файл из шаблона
+		vars := make(jet.VarMap)
+		if err := g.template.generateFromTemplateWithVars(tmpl, outPath, vars, models); err != nil {
+			return fmt.Errorf("failed to generate %s: %w", outPath, err)
+		}
+	}
+
+	return nil
 }

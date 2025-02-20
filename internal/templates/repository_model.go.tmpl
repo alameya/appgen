@@ -1,4 +1,4 @@
-package {{toLower .Name}}
+package {{toLower(.Name)}}
 
 import (
     "context"
@@ -21,26 +21,22 @@ func New{{.Name}}Repository(db *sqlx.DB) *{{.Name}}Repository {
 }
 
 func (r *{{.Name}}Repository) Create(ctx context.Context, item *models.{{.Name}}) (*models.{{.Name}}, error) {
-    query := sq.Insert("{{toLower .Name}}s").
+    query := sq.Insert("{{toLower(.Name)}}s").
         Columns(
-            {{- $first := true -}}
-            {{- range $f := .Fields -}}
-            {{- if ne (toLower $f.Name) "id" -}}
-            {{if not $first}}, {{end}}"{{toLower .DbName}}"
-            {{- $first = false -}}
-            {{- end -}}
-            {{- end}},
+            {{range .Fields}}
+            {{if .Name != "Id"}}
+            "{{toLower(.DbName)}}",
+            {{end}}
+            {{end}}
             "created_at",
             "updated_at",
         ).
         Values(
-            {{- $first := true -}}
-            {{- range $f := .Fields -}}
-            {{- if ne (toLower $f.Name) "id" -}}
-            {{if not $first}}, {{end}}item.{{toCamel .Name}}
-            {{- $first = false -}}
-            {{- end -}}
-            {{- end}},
+            {{range .Fields}}
+            {{if .Name != "Id"}}
+            item.{{toCamel(.Name)}},
+            {{end}}
+            {{end}}
             sq.Expr("CURRENT_TIMESTAMP"),
             sq.Expr("CURRENT_TIMESTAMP"),
         ).
@@ -61,7 +57,7 @@ func (r *{{.Name}}Repository) Create(ctx context.Context, item *models.{{.Name}}
 
 func (r *{{.Name}}Repository) Get(ctx context.Context, id int64) (*models.{{.Name}}, error) {
     query := sq.Select("*").
-        From("{{toLower .Name}}s").
+        From("{{toLower(.Name)}}s").
         Where(sq.Eq{"id": id})
 
     sql, args, err := query.ToSql()
@@ -79,7 +75,7 @@ func (r *{{.Name}}Repository) Get(ctx context.Context, id int64) (*models.{{.Nam
 
 func (r *{{.Name}}Repository) List(ctx context.Context) ([]*models.{{.Name}}, error) {
     query := sq.Select("*").
-        From("{{toLower .Name}}s")
+        From("{{toLower(.Name)}}s")
 
     sql, args, err := query.ToSql()
     if err != nil {
@@ -95,10 +91,14 @@ func (r *{{.Name}}Repository) List(ctx context.Context) ([]*models.{{.Name}}, er
 }
 
 func (r *{{.Name}}Repository) Update(ctx context.Context, item *models.{{.Name}}) error {
-    query := sq.Update("{{toLower .Name}}s").
+    query := sq.Update("{{toLower(.Name)}}s").
         Set("updated_at", sq.Expr("CURRENT_TIMESTAMP")).
-        Where(sq.Eq{"id": item.Id}){{range .Fields}}{{if ne (toLower .Name) "id"}}
-    query = query.Set("{{toLower .DbName}}", item.{{toCamel .Name}}){{end}}{{end}}
+        Where(sq.Eq{"id": item.Id})
+    {{range .Fields}}
+    {{if toLower(.Name) != "id"}}
+    query = query.Set("{{toLower(.DbName)}}", item.{{toCamel(.Name)}})
+    {{end}}
+    {{end}}
 
     sql, args, err := query.ToSql()
     if err != nil {
@@ -123,7 +123,7 @@ func (r *{{.Name}}Repository) Update(ctx context.Context, item *models.{{.Name}}
 }
 
 func (r *{{.Name}}Repository) Delete(ctx context.Context, id int64) error {
-    query := sq.Delete("{{toLower .Name}}s").
+    query := sq.Delete("{{toLower(.Name)}}s").
         Where(sq.Eq{"id": id})
 
     sql, args, err := query.ToSql()

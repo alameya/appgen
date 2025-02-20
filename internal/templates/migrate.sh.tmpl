@@ -46,4 +46,11 @@ if [ $? -eq 0 ]; then
 else
     echo "Error: Failed to run migrations $COMMAND"
     exit 1
-fi 
+fi
+
+# Run migrations for each model
+echo "Running migrations for each model..."
+{{range model := .}}
+echo "Running migrations for {{toLower(model.Name)}}..."
+goose -dir migrations/{{toLower(model.Name)}} up
+{{end}} 

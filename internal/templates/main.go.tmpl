@@ -15,9 +15,9 @@ import (
 	"app/internal/repository"
 	"app/internal/proto"
 	{{range .}}
-	{{toLower .Name}}Handler "app/internal/handler/{{toLower .Name}}"
-	{{toLower .Name}}Service "app/internal/service/{{toLower .Name}}"
-	{{toLower .Name}}Grpc "app/internal/grpc/{{toLower .Name}}"
+	{{toLower(.Name)}}Handler "app/internal/handler/{{toLower(.Name)}}"
+	{{toLower(.Name)}}Service "app/internal/service/{{toLower(.Name)}}"
+	{{toLower(.Name)}}Grpc "app/internal/grpc/{{toLower(.Name)}}"
 	{{end}}
 )
 
@@ -53,10 +53,10 @@ func main() {
 	r := mux.NewRouter()
 
 	{{range .}}
-	// Create application layers for {{.Name}}
-	{{toLower .Name}}Svc := {{toLower .Name}}Service.New{{.Name}}Service(repo)
-	{{toLower .Name}}H := {{toLower .Name}}Handler.New{{.Name}}Handler({{toLower .Name}}Svc)
-	{{toLower .Name}}H.Register(r)
+	// Create application layers for {{.Name}} model
+	{{toLower(.Name)}}Svc := {{toLower(.Name)}}Service.New{{.Name}}Service(repo)
+	{{toLower(.Name)}}H := {{toLower(.Name)}}Handler.New{{.Name}}Handler({{toLower(.Name)}}Svc)
+	{{toLower(.Name)}}H.Register(r)
 	{{end}}
 
 	// Start gRPC server
@@ -66,7 +66,7 @@ func main() {
 	}
 	s := grpc.NewServer()
 	{{range .}}
-	proto.Register{{.Name}}ServiceServer(s, {{toLower .Name}}Grpc.NewServer(repo))
+	proto.Register{{.Name}}ServiceServer(s, {{toLower(.Name)}}Grpc.NewServer(repo))
 	{{end}}
 	go func() {
 		log.Printf("gRPC server listening at %v", lis.Addr())

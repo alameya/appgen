@@ -1,4 +1,4 @@
-package {{toLower .Name}}
+package {{toLower(.Name)}}
 
 import (
     "context"
@@ -21,13 +21,15 @@ func NewServer(repo *repository.Repository) *Server {
 func (s *Server) Create(ctx context.Context, req *proto.Create{{.Name}}Request) (*proto.{{.Name}}, error) {
     item := &models.{{.Name}}{
         {{range .Fields}}
-        {{if ne .Name "Id"}}{{toCamel .Name}}: req.{{toCamel .Name}},{{end}}
+        {{if .Name != "Id"}}
+        {{toCamel(.Name)}}: req.{{toCamel(.Name)}},
+        {{end}}
         {{end}}
     }
 
     result, err := s.repo.{{.Name}}.Create(ctx, item)
     if err != nil {
-        return nil, fmt.Errorf("failed to create {{toLower .Name}}: %w", err)
+        return nil, fmt.Errorf("failed to create {{toLower(.Name)}}: %w", err)
     }
 
     return convert{{.Name}}ToProto(result), nil
@@ -36,7 +38,7 @@ func (s *Server) Create(ctx context.Context, req *proto.Create{{.Name}}Request) 
 func (s *Server) Get(ctx context.Context, req *proto.Get{{.Name}}Request) (*proto.{{.Name}}, error) {
     result, err := s.repo.{{.Name}}.Get(ctx, req.Id)
     if err != nil {
-        return nil, fmt.Errorf("failed to get {{toLower .Name}}: %w", err)
+        return nil, fmt.Errorf("failed to get {{toLower(.Name)}}: %w", err)
     }
 
     return convert{{.Name}}ToProto(result), nil
@@ -45,7 +47,7 @@ func (s *Server) Get(ctx context.Context, req *proto.Get{{.Name}}Request) (*prot
 func (s *Server) List(ctx context.Context, req *proto.List{{.Name}}Request) (*proto.List{{.Name}}Response, error) {
     results, err := s.repo.{{.Name}}.List(ctx)
     if err != nil {
-        return nil, fmt.Errorf("failed to list {{toLower .Name}}s: %w", err)
+        return nil, fmt.Errorf("failed to list {{toLower(.Name)}}s: %w", err)
     }
 
     items := make([]*proto.{{.Name}}, len(results))
@@ -58,8 +60,10 @@ func (s *Server) List(ctx context.Context, req *proto.List{{.Name}}Request) (*pr
 
 func convert{{.Name}}ToProto(item *models.{{.Name}}) *proto.{{.Name}} {
     return &proto.{{.Name}}{
-        {{- range .Fields -}}
-        {{toCamel .Name}}: item.{{toCamel .Name}},
+        {{range .Fields}}
+        {{if .Name != "Id"}}
+        {{toCamel(.Name)}}: item.{{toCamel(.Name)}},
+        {{end}}
         {{end}}
     }
 } 
