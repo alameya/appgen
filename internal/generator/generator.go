@@ -87,7 +87,8 @@ func (g *Generator) generateFilesForModel(model *Model, outputDir string, modelI
 		"repository_model.go.tmpl": filepath.Join(outputDir, "internal", "repository", strings.ToLower(model.Name), "repository.go"),
 		"service.go.tmpl":          filepath.Join(outputDir, "internal", "service", strings.ToLower(model.Name), "service.go"),
 		"models.go.tmpl":           filepath.Join(outputDir, "internal", "models", strings.ToLower(model.Name)+".go"),
-		"migration.sql.tmpl":       filepath.Join(outputDir, "migrations", fmt.Sprintf("%d_create_%s.sql", time.Now().Unix(), strings.ToLower(model.Name))),
+		"migration.sql.tmpl":       filepath.Join(outputDir, "migrations", fmt.Sprintf("%d01_create_%s.sql", time.Now().Unix(), strings.ToLower(model.Name))),
+		"migration_fk.sql.tmpl":    filepath.Join(outputDir, "migrations", fmt.Sprintf("%d02_add_%s_foreign_keys.sql", time.Now().Unix(), strings.ToLower(model.Name))),
 		"grpc.go.tmpl":             filepath.Join(outputDir, "internal", "grpc", strings.ToLower(model.Name), "server.go"),
 	}
 
