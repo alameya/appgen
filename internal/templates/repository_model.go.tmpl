@@ -24,7 +24,7 @@ func (r *{{.Name}}Repository) Create(ctx context.Context, item *models.{{.Name}}
     // Формируем список колонок и значений, исключая Id
     columns := []string{
         {{range .Fields}}
-        {{if .Name != "Id"}}
+        {{if toLower(.Name) != "id"}}
         "{{toLower(.DbName)}}",
         {{end}}
         {{end}}
@@ -34,7 +34,7 @@ func (r *{{.Name}}Repository) Create(ctx context.Context, item *models.{{.Name}}
 
     values := []interface{}{
         {{range .Fields}}
-        {{if .Name != "Id"}}
+        {{if toLower(.Name) != "id"}}
         item.{{toCamel(.Name)}},
         {{end}}
         {{end}}
