@@ -7,17 +7,17 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/jmoiron/sqlx"
 	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
-	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 
-	"app/internal/repository"
 	"app/internal/proto"
+	"app/internal/repository"
+
 	{{range .}}
-	{{toLower(.Name)}}Service "app/internal/service/{{toLower(.Name)}}"
 	{{toLower(.Name)}}Grpc "app/internal/grpc/{{toLower(.Name)}}"
 	{{end}}
 )
