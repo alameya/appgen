@@ -9,7 +9,6 @@ rm -rf out/
 
 # Create required directories
 echo "Creating directories..."
-mkdir -p out/api
 mkdir -p out/internal/grpc
 mkdir -p out/internal/proto
 mkdir -p out/migrations
@@ -28,28 +27,12 @@ if ! command -v protoc-gen-go-grpc &> /dev/null; then
     go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.3.0
 fi
 
-if ! command -v protoc-gen-grpc-gateway &> /dev/null; then
-    echo "Installing protoc-gen-grpc-gateway..."
-    go install github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-grpc-gateway@v2.19.1
-fi
-
-if ! command -v protoc-gen-openapiv2 &> /dev/null; then
-    echo "Installing protoc-gen-openapiv2..."
-    go install github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-openapiv2@v2.19.1
-fi
-
-# Generate code
+# Generate proto files
 protoc \
-        --proto_path=. \
-        --proto_path=/usr/local/include \
-        --go_out=out \
-        --go-grpc_out=out \
-        --grpc-gateway_out=out \
-        --grpc-gateway_opt=logtostderr=true \
-        --grpc-gateway_opt=allow_delete_body=true \
-        --grpc-gateway_opt=generate_unbound_methods=true \
-        --openapiv2_out=out/api \
-        proto/*.proto
+    --proto_path=. \
+    --go_out=out \
+    --go-grpc_out=out \
+    proto/*.proto
 
 go run cmd/generator/main.go -proto="proto/*.proto" -output=out
 

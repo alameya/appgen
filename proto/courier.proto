@@ -11,10 +11,6 @@ option go_package = "app/internal/proto";
 service CourierService {
   // Create a new courier
   rpc Create(CreateCourierRequest) returns (Courier) {
-    option (google.api.http) = {
-      post: "/api/v1/couriers"
-      body: "*"
-    };
   }
 
   // Get courier by ID
