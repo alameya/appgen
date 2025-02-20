@@ -4,12 +4,8 @@ import (
 	"github.com/jmoiron/sqlx"
 	sq "github.com/Masterminds/squirrel"
 
-	{{$first := true}}
 	{{range .}}
-	{{if not $first}},{{end}}
-	{{toLower .Name}}Repository "app/internal/repository/{{toLower .Name}}"
-	{{$first = false}}
-	{{end}}
+	{{toLower .Name}}Repository "app/internal/repository/{{toLower .Name}}"{{end}}
 )
 
 type Repository struct {
