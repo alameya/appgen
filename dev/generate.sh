@@ -14,6 +14,33 @@ mkdir -p out/internal/grpc
 mkdir -p out/internal/proto
 mkdir -p out/migrations
 
+# Determine which MD5 command to use
+if command -v md5sum >/dev/null 2>&1; then
+    MD5_CMD="md5sum"
+elif command -v md5 >/dev/null 2>&1; then
+    MD5_CMD="md5 -r"
+else
+    echo "Neither md5sum nor md5 command found"
+    exit 1
+fi
+
+# Calculate MD5 sum of all proto files
+PROTO_MD5=$(find proto -name "*.proto" -type f -exec $MD5_CMD {} \; | sort | $MD5_CMD | cut -d' ' -f1)
+MD5_FILE=".proto.md5"
+
+# Check if MD5 has changed
+NEED_GENERATE=1
+if [ -f "$MD5_FILE" ]; then
+    OLD_MD5=$(cat "$MD5_FILE")
+    if [ "$OLD_MD5" == "$PROTO_MD5" ]; then
+        NEED_GENERATE=0
+        echo "Proto files have not changed, skipping code generation..."
+    fi
+fi
+
+# Save current MD5
+echo "$PROTO_MD5" > "$MD5_FILE"
+
 # Generate proto files
 echo "Generating proto files..."
 # Install required protoc plugins
@@ -41,8 +68,10 @@ mv out/app/internal/proto/* out/internal/proto/
 rm -rf out/app
 
 # Generate code
-echo "Generating code..."
-go run cmd/generator/main.go -proto="proto/*.proto" -output=out
+if [ "$NEED_GENERATE" == "1" ]; then
+    echo "Generating code..."
+    go run cmd/generator/main.go -proto="proto/*.proto" -output=out
+fi
 
 # Format generated code
 echo "Formatting generated code..."
