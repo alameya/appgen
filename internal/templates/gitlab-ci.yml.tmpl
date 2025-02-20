@@ -1,1 +1,53 @@
- 
+image: golang:1.21
+
+variables:
+  GOPATH: $CI_PROJECT_DIR/.go
+  POSTGRES_USER: postgres
+  POSTGRES_PASSWORD: postgres
+  POSTGRES_DB: postgres
+  POSTGRES_HOST: postgres
+  DATABASE_URL: "postgres://postgres:postgres@postgres:5432/postgres?sslmode=disable"
+
+services:
+  - postgres:15
+
+stages:
+  - test
+  - build
+  - deploy
+
+before_script:
+  - go version
+  - go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.32.0
+  - go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.3.0
+  - go install github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-grpc-gateway@v2.19.1
+
+test:
+  stage: test
+  script:
+    - go test -v ./...
+    - go test -v -race ./...
+
+lint:
+  stage: test
+  script:
+    - go install golang.org/x/lint/golint@latest
+    - golint -set_exit_status ./...
+    - go vet ./...
+
+build:
+  stage: build
+  script:
+    - CGO_ENABLED=0 GOOS=linux go build -o app cmd/app/main.go
+  artifacts:
+    paths:
+      - app
+
+deploy:
+  stage: deploy
+  script:
+    - echo "Deploy to production server"
+  only:
+    - main
+  environment:
+    name: production 
