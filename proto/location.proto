@@ -40,7 +40,7 @@ service LocationService {
   }
 
   // Delete location
-  rpc Delete(DeleteLocationRequest) returns (Empty) {
+  rpc Delete(DeleteLocationRequest) returns (EmptyResponse) {
     option (google.api.http) = {
       delete: "/api/v1/locations/{id}"
     };

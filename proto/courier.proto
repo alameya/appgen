@@ -40,7 +40,7 @@ service CourierService {
   }
 
   // Delete courier
-  rpc Delete(DeleteCourierRequest) returns (Empty) {
+  rpc Delete(DeleteCourierRequest) returns (EmptyResponse) {
     option (google.api.http) = {
       delete: "/api/v1/couriers/{id}"
     };

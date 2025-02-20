@@ -4,5 +4,5 @@ package proto;
 
 option go_package = "app/internal/proto";
 
-// Empty response message used for operations that don't return data
-message Empty {} 
+// EmptyResponse message used for operations that don't return data
+message EmptyResponse {} 
