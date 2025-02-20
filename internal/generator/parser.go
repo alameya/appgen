@@ -58,6 +58,8 @@ func (p *Parser) Parse(protoPath string) ([]*Model, error) {
 		message := messages.Get(i)
 		name := string(message.Name())
 
+		fmt.Printf("Parsing message: %s\n", name)
+
 		// Пропускаем сообщения запросов и ответов
 		if strings.HasSuffix(name, "Request") || strings.HasSuffix(name, "Response") {
 			continue
@@ -96,6 +98,8 @@ func getGoType(field protoreflect.FieldDescriptor) string {
 		return "string"
 	case protoreflect.BoolKind:
 		return "bool"
+	case protoreflect.DoubleKind:
+		return "float64"
 	case protoreflect.MessageKind:
 		return "*" + string(field.Message().Name())
 	default:
@@ -120,6 +124,8 @@ func getSqlType(protoType string) string {
 		return "TEXT"
 	case "BOOL":
 		return "BOOLEAN"
+	case "DOUBLE":
+		return "DOUBLE PRECISION"
 	default:
 		return "TEXT"
 	}

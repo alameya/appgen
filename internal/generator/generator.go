@@ -2,9 +2,6 @@ package generator
 
 import (
 	"fmt"
-
-	"github.com/iancoleman/strcase"
-	"google.golang.org/protobuf/types/descriptorpb"
 )
 
 type Generator struct {
@@ -36,73 +33,4 @@ func (g *Generator) GenerateFromProtoFiles(protoFiles []string, outputDir string
 
 func (g *Generator) GenerateFromProto(protoPath, outputDir string) error {
 	return g.GenerateFromProtoFiles([]string{protoPath}, outputDir)
-}
-
-func (g *Generator) getGoType(field *descriptorpb.FieldDescriptorProto) string {
-	switch field.GetType() {
-	case descriptorpb.FieldDescriptorProto_TYPE_INT64:
-		return "int64"
-	case descriptorpb.FieldDescriptorProto_TYPE_STRING:
-		return "string"
-	case descriptorpb.FieldDescriptorProto_TYPE_BOOL:
-		return "bool"
-	case descriptorpb.FieldDescriptorProto_TYPE_DOUBLE:
-		return "float64"
-	default:
-		return "string"
-	}
-}
-
-func (g *Generator) parseField(field *descriptorpb.FieldDescriptorProto) Field {
-	name := field.GetName()
-	fmt.Printf("Parsing field: %s, type: %s\n", name, field.GetType())
-
-	goType := g.getGoType(field)
-	fmt.Printf("Got Go type: %s\n", goType)
-
-	var sqlType string
-	switch field.GetType() {
-	case descriptorpb.FieldDescriptorProto_TYPE_INT64:
-		sqlType = "BIGINT"
-	case descriptorpb.FieldDescriptorProto_TYPE_STRING:
-		sqlType = "TEXT"
-	case descriptorpb.FieldDescriptorProto_TYPE_BOOL:
-		sqlType = "BOOLEAN"
-	case descriptorpb.FieldDescriptorProto_TYPE_DOUBLE:
-		sqlType = "DOUBLE PRECISION"
-	default:
-		sqlType = "TEXT"
-	}
-
-	fmt.Printf("SQL type: %s\n", sqlType)
-
-	return Field{
-		Name:     strcase.ToCamel(name),
-		Type:     goType,
-		JsonName: name,
-		DbName:   name,
-		SqlType:  sqlType,
-	}
-}
-
-func (g *Generator) parseMessage(message *descriptorpb.DescriptorProto) (*Model, error) {
-	var fields []Field
-	for i, field := range message.GetField() {
-		f := g.parseField(field)
-		f.Last = i == len(message.GetField())-1
-		fields = append(fields, f)
-	}
-
-	return &Model{
-		Name:   message.GetName(),
-		Fields: fields,
-	}, nil
-}
-
-func (g *Generator) generateForModel(model *Model, outputDir string) error {
-	if err := g.template.generateModelFiles(model, outputDir); err != nil {
-		return fmt.Errorf("failed to generate files for model %s: %w", model.Name, err)
-	}
-
-	return nil
 }
