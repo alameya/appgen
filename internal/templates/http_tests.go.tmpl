@@ -1,0 +1,923 @@
+{{define "http_tests"}}
+// Create Tests
+func (s *IntegrationTestSuite) Test{{.Name}}CreateHTTP() {
+    tests := []struct {
+        name           string
+        request        interface{}
+        setupFn        func()
+        expectedStatus int
+        expectedError  string
+        validateFn     func(*testing.T, *http.Response, error)
+    }{
+        // Позитивные тесты
+        {
+            name: "Success/ValidData",
+            request: map[string]interface{}{
+                {{range .Fields}}
+                {{if ne .Name "Id"}}
+                "{{toLower .Name}}": s.generateTestData("{{.Type}}"),
+                {{end}}
+                {{end}}
+            },
+            expectedStatus: http.StatusOK,
+            validateFn: func(t *testing.T, resp *http.Response, err error) {
+                require.NoError(t, err)
+                var response map[string]interface{}
+                require.NoError(t, json.NewDecoder(resp.Body).Decode(&response))
+                require.NotNil(t, response["id"])
+                {{range .Fields}}
+                {{if ne .Name "Id"}}
+                require.NotEmpty(t, response["{{toLower .Name}}"])
+                {{end}}
+                {{end}}
+            },
+        },
+        // Негативные тесты
+        {
+            name: "Error/EmptyRequest",
+            request: map[string]interface{}{},
+            expectedStatus: http.StatusBadRequest,
+            expectedError: "required field",
+        },
+        {{range .Fields}}
+        {{if ne .Name "Id"}}
+        {
+            name: "Error/Invalid{{.Name}}",
+            request: map[string]interface{}{
+                {{range $.Fields}}
+                {{if ne .Name "Id"}}
+                "{{toLower .Name}}": s.generateTestData("{{.Type}}"),
+                {{end}}
+                {{end}}
+                "{{toLower .Name}}": s.generateInvalidData("{{.Type}}"),
+            },
+            expectedStatus: http.StatusBadRequest,
+            expectedError: "invalid {{toLower .Name}}",
+        },
+        {{end}}
+        {{end}}
+        // Граничные случаи
+        {
+            name: "Success/MaxLengthValues",
+            request: map[string]interface{}{
+                {{range .Fields}}
+                {{if ne .Name "Id"}}
+                "{{toLower .Name}}": s.generateString(255),
+                {{end}}
+                {{end}}
+            },
+            expectedStatus: http.StatusOK,
+        },
+        // Дополнительные тесты...
+    }
+
+    for _, tt := range tests {
+        s.Run(tt.name, func() {
+            s.cleanupDB()
+
+            if tt.setupFn != nil {
+                tt.setupFn()
+            }
+
+            body, err := json.Marshal(tt.request)
+            s.Require().NoError(err)
+
+            resp, err := http.Post(
+                fmt.Sprintf("http://localhost:%s/api/v1/{{toLower .Name}}s", s.httpPort),
+                "application/json",
+                bytes.NewBuffer(body),
+            )
+
+            if resp != nil {
+                defer resp.Body.Close()
+                if tt.expectedError != "" {
+                    s.checkHTTPError(resp, tt.expectedStatus, tt.expectedError)
+                } else {
+                    s.Require().Equal(tt.expectedStatus, resp.StatusCode)
+                }
+            }
+
+            if tt.validateFn != nil {
+                tt.validateFn(s.T(), resp, err)
+            }
+        })
+    }
+}
+
+// Get Tests
+func (s *IntegrationTestSuite) Test{{.Name}}GetHTTP() {
+    tests := []struct {
+        name           string
+        setupFn        func() int64 // возвращает ID для получения
+        id             string // используем string для тестирования невалидных ID
+        expectedStatus int
+        expectedError  string
+        validateFn     func(*testing.T, *http.Response, error)
+    }{
+        {
+            name: "Success/ExistingID",
+            setupFn: func() int64 {
+                resp, err := s.{{toLower .Name}}.Create(context.Background(), &proto.Create{{.Name}}Request{
+                    {{range .Fields}}
+                    {{if ne .Name "Id"}}
+                    {{.Name}}: s.generateTestData("{{.Type}}").({{.Type}}),
+                    {{end}}
+                    {{end}}
+                })
+                s.Require().NoError(err)
+                return resp.Id
+            },
+            expectedStatus: http.StatusOK,
+            validateFn: func(t *testing.T, resp *http.Response, err error) {
+                require.NoError(t, err)
+                var response map[string]interface{}
+                require.NoError(t, json.NewDecoder(resp.Body).Decode(&response))
+                require.NotNil(t, response["id"])
+            },
+        },
+        {
+            name:           "Error/NonExistentID",
+            id:            "999999",
+            expectedStatus: http.StatusNotFound,
+            expectedError:  "not found",
+        },
+        {
+            name:           "Error/InvalidID",
+            id:            "invalid",
+            expectedStatus: http.StatusBadRequest,
+            expectedError:  "invalid id",
+        },
+    }
+
+    for _, tt := range tests {
+        s.Run(tt.name, func() {
+            s.cleanupDB()
+
+            var id string
+            if tt.setupFn != nil {
+                id = fmt.Sprintf("%d", tt.setupFn())
+            } else {
+                id = tt.id
+            }
+
+            resp, err := http.Get(fmt.Sprintf("http://localhost:%s/api/v1/{{toLower .Name}}s/%s", s.httpPort, id))
+
+            if resp != nil {
+                defer resp.Body.Close()
+                if tt.expectedError != "" {
+                    s.checkHTTPError(resp, tt.expectedStatus, tt.expectedError)
+                } else {
+                    s.Require().Equal(tt.expectedStatus, resp.StatusCode)
+                }
+            }
+
+            if tt.validateFn != nil {
+                tt.validateFn(s.T(), resp, err)
+            }
+        })
+    }
+}
+
+// List Tests
+func (s *IntegrationTestSuite) Test{{.Name}}ListHTTP() {
+    tests := []struct {
+        name           string
+        setupFn        func() // создает тестовые записи
+        query          string
+        expectedStatus int
+        expectedError  string
+        validateFn     func(*testing.T, *http.Response, error)
+    }{
+        {
+            name: "Success/EmptyList",
+            expectedStatus: http.StatusOK,
+            validateFn: func(t *testing.T, resp *http.Response, err error) {
+                require.NoError(t, err)
+                var response map[string]interface{}
+                require.NoError(t, json.NewDecoder(resp.Body).Decode(&response))
+                items, ok := response["items"].([]interface{})
+                require.True(t, ok)
+                require.Empty(t, items)
+            },
+        },
+        {
+            name: "Success/WithPagination",
+            setupFn: func() {
+                // Создаем 5 записей
+                for i := 0; i < 5; i++ {
+                    _, err := s.{{toLower .Name}}.Create(context.Background(), &proto.Create{{.Name}}Request{
+                        {{range .Fields}}
+                        {{if ne .Name "Id"}}
+                        {{.Name}}: s.generateTestData("{{.Type}}").({{.Type}}),
+                        {{end}}
+                        {{end}}
+                    })
+                    s.Require().NoError(err)
+                }
+            },
+            query: "limit=2&offset=1",
+            expectedStatus: http.StatusOK,
+            validateFn: func(t *testing.T, resp *http.Response, err error) {
+                require.NoError(t, err)
+                var response map[string]interface{}
+                require.NoError(t, json.NewDecoder(resp.Body).Decode(&response))
+                items, ok := response["items"].([]interface{})
+                require.True(t, ok)
+                require.Len(t, items, 2)
+            },
+        },
+        {
+            name: "Error/InvalidPagination",
+            query: "limit=-1&offset=-5",
+            expectedStatus: http.StatusBadRequest,
+            expectedError: "invalid pagination",
+        },
+    }
+
+    for _, tt := range tests {
+        s.Run(tt.name, func() {
+            s.cleanupDB()
+
+            if tt.setupFn != nil {
+                tt.setupFn()
+            }
+
+            url := fmt.Sprintf("http://localhost:%s/api/v1/{{toLower .Name}}s", s.httpPort)
+            if tt.query != "" {
+                url += "?" + tt.query
+            }
+
+            resp, err := http.Get(url)
+
+            if resp != nil {
+                defer resp.Body.Close()
+                if tt.expectedError != "" {
+                    s.checkHTTPError(resp, tt.expectedStatus, tt.expectedError)
+                } else {
+                    s.Require().Equal(tt.expectedStatus, resp.StatusCode)
+                }
+            }
+
+            if tt.validateFn != nil {
+                tt.validateFn(s.T(), resp, err)
+            }
+        })
+    }
+}
+
+// Update Tests
+func (s *IntegrationTestSuite) Test{{.Name}}UpdateHTTP() {
+    tests := []struct {
+        name           string
+        setupFn        func() int64
+        id            string
+        request        interface{}
+        expectedStatus int
+        expectedError  string
+        validateFn     func(*testing.T, *http.Response, error)
+    }{
+        {
+            name: "Success/FullUpdate",
+            setupFn: func() int64 {
+                resp, err := s.{{toLower .Name}}.Create(context.Background(), &proto.Create{{.Name}}Request{
+                    {{range .Fields}}
+                    {{if ne .Name "Id"}}
+                    {{.Name}}: s.generateTestData("{{.Type}}").({{.Type}}),
+                    {{end}}
+                    {{end}}
+                })
+                s.Require().NoError(err)
+                return resp.Id
+            },
+            request: map[string]interface{}{
+                {{range .Fields}}
+                {{if ne .Name "Id"}}
+                "{{toLower .Name}}": s.generateTestData("{{.Type}}"),
+                {{end}}
+                {{end}}
+            },
+            expectedStatus: http.StatusOK,
+            validateFn: func(t *testing.T, resp *http.Response, err error) {
+                require.NoError(t, err)
+                var response map[string]interface{}
+                require.NoError(t, json.NewDecoder(resp.Body).Decode(&response))
+                require.NotNil(t, response["id"])
+            },
+        },
+        {
+            name: "Success/PartialUpdate",
+            setupFn: func() int64 {
+                resp, err := s.{{toLower .Name}}.Create(context.Background(), &proto.Create{{.Name}}Request{
+                    {{range .Fields}}
+                    {{if ne .Name "Id"}}
+                    {{.Name}}: s.generateTestData("{{.Type}}").({{.Type}}),
+                    {{end}}
+                    {{end}}
+                })
+                s.Require().NoError(err)
+                return resp.Id
+            },
+            request: map[string]interface{}{
+                "status": "inactive",
+            },
+            expectedStatus: http.StatusOK,
+        },
+        {
+            name:           "Error/NonExistentID",
+            id:            "999999",
+            request:       map[string]interface{}{},
+            expectedStatus: http.StatusNotFound,
+            expectedError:  "not found",
+        },
+    }
+
+    for _, tt := range tests {
+        s.Run(tt.name, func() {
+            s.cleanupDB()
+
+            var id string
+            if tt.setupFn != nil {
+                id = fmt.Sprintf("%d", tt.setupFn())
+            } else {
+                id = tt.id
+            }
+
+            body, err := json.Marshal(tt.request)
+            s.Require().NoError(err)
+
+            req, err := http.NewRequest(
+                http.MethodPut,
+                fmt.Sprintf("http://localhost:%s/api/v1/{{toLower .Name}}s/%s", s.httpPort, id),
+                bytes.NewBuffer(body),
+            )
+            s.Require().NoError(err)
+            req.Header.Set("Content-Type", "application/json")
+
+            resp, err := http.DefaultClient.Do(req)
+
+            if resp != nil {
+                defer resp.Body.Close()
+                if tt.expectedError != "" {
+                    s.checkHTTPError(resp, tt.expectedStatus, tt.expectedError)
+                } else {
+                    s.Require().Equal(tt.expectedStatus, resp.StatusCode)
+                }
+            }
+
+            if tt.validateFn != nil {
+                tt.validateFn(s.T(), resp, err)
+            }
+        })
+    }
+}
+
+// Delete Tests
+func (s *IntegrationTestSuite) Test{{.Name}}DeleteHTTP() {
+    tests := []struct {
+        name           string
+        setupFn        func() int64
+        id             string
+        expectedStatus int
+        expectedError  string
+        validateFn     func(*testing.T, *http.Response, error)
+    }{
+        {
+            name: "Success/ExistingID",
+            setupFn: func() int64 {
+                resp, err := s.{{toLower .Name}}.Create(context.Background(), &proto.Create{{.Name}}Request{
+                    {{range .Fields}}
+                    {{if ne .Name "Id"}}
+                    {{.Name}}: s.generateTestData("{{.Type}}").({{.Type}}),
+                    {{end}}
+                    {{end}}
+                })
+                s.Require().NoError(err)
+                return resp.Id
+            },
+            expectedStatus: http.StatusOK,
+            validateFn: func(t *testing.T, resp *http.Response, err error) {
+                require.NoError(t, err)
+                // Проверяем что запись действительно удалена
+                checkResp, err := http.Get(fmt.Sprintf("http://localhost:%s/api/v1/{{toLower .Name}}s/%s", s.httpPort, "1"))
+                require.NoError(t, err)
+                require.Equal(t, http.StatusNotFound, checkResp.StatusCode)
+            },
+        },
+        {
+            name:           "Error/NonExistentID",
+            id:            "999999",
+            expectedStatus: http.StatusNotFound,
+            expectedError:  "not found",
+        },
+        {
+            name:           "Error/InvalidID",
+            id:            "invalid",
+            expectedStatus: http.StatusBadRequest,
+            expectedError:  "invalid id",
+        },
+        {
+            name: "Error/MethodNotAllowed",
+            setupFn: func() int64 {
+                resp, err := s.{{toLower .Name}}.Create(context.Background(), &proto.Create{{.Name}}Request{
+                    {{range .Fields}}
+                    {{if ne .Name "Id"}}
+                    {{.Name}}: s.generateTestData("{{.Type}}").({{.Type}}),
+                    {{end}}
+                    {{end}}
+                })
+                s.Require().NoError(err)
+                return resp.Id
+            },
+            expectedStatus: http.StatusMethodNotAllowed,
+            validateFn: func(t *testing.T, resp *http.Response, err error) {
+                require.NoError(t, err)
+                // Пробуем удалить через POST
+                postReq, err := http.NewRequest(
+                    http.MethodPost,
+                    fmt.Sprintf("http://localhost:%s/api/v1/{{toLower .Name}}s/%s/delete", s.httpPort, "1"),
+                    nil,
+                )
+                require.NoError(t, err)
+                postResp, err := http.DefaultClient.Do(postReq)
+                require.NoError(t, err)
+                require.Equal(t, http.StatusMethodNotAllowed, postResp.StatusCode)
+            },
+        },
+    }
+
+    for _, tt := range tests {
+        s.Run(tt.name, func() {
+            s.cleanupDB()
+
+            var id string
+            if tt.setupFn != nil {
+                id = fmt.Sprintf("%d", tt.setupFn())
+            } else {
+                id = tt.id
+            }
+
+            req, err := http.NewRequest(
+                http.MethodDelete,
+                fmt.Sprintf("http://localhost:%s/api/v1/{{toLower .Name}}s/%s", s.httpPort, id),
+                nil,
+            )
+            s.Require().NoError(err)
+
+            resp, err := http.DefaultClient.Do(req)
+
+            if resp != nil {
+                defer resp.Body.Close()
+                if tt.expectedError != "" {
+                    s.checkHTTPError(resp, tt.expectedStatus, tt.expectedError)
+                } else {
+                    s.Require().Equal(tt.expectedStatus, resp.StatusCode)
+                }
+            }
+
+            if tt.validateFn != nil {
+                tt.validateFn(s.T(), resp, err)
+            }
+        })
+    }
+}
+
+// Тесты на специальные HTTP сценарии
+func (s *IntegrationTestSuite) Test{{.Name}}SpecialHTTP() {
+    tests := []struct {
+        name           string
+        setupFn        func() *http.Request
+        expectedStatus int
+        expectedError  string
+        validateFn     func(*testing.T, *http.Response, error)
+    }{
+        {
+            name: "Error/InvalidContentType",
+            setupFn: func() *http.Request {
+                body := []byte(`{"name": "test"}`)
+                req, err := http.NewRequest(
+                    http.MethodPost,
+                    fmt.Sprintf("http://localhost:%s/api/v1/{{toLower .Name}}s", s.httpPort),
+                    bytes.NewBuffer(body),
+                )
+                s.Require().NoError(err)
+                req.Header.Set("Content-Type", "text/plain") // Неверный Content-Type
+                return req
+            },
+            expectedStatus: http.StatusUnsupportedMediaType,
+            expectedError: "unsupported media type",
+        },
+        {
+            name: "Error/InvalidJSON",
+            setupFn: func() *http.Request {
+                body := []byte(`{"name": "test"`) // Невалидный JSON
+                req, err := http.NewRequest(
+                    http.MethodPost,
+                    fmt.Sprintf("http://localhost:%s/api/v1/{{toLower .Name}}s", s.httpPort),
+                    bytes.NewBuffer(body),
+                )
+                s.Require().NoError(err)
+                req.Header.Set("Content-Type", "application/json")
+                return req
+            },
+            expectedStatus: http.StatusBadRequest,
+            expectedError: "invalid json",
+        },
+        {
+            name: "Error/RequestTooLarge",
+            setupFn: func() *http.Request {
+                // Создаем большой JSON объект
+                largeData := map[string]string{
+                    "data": s.generateString(1024 * 1024), // 1MB данных
+                }
+                body, err := json.Marshal(largeData)
+                s.Require().NoError(err)
+                
+                req, err := http.NewRequest(
+                    http.MethodPost,
+                    fmt.Sprintf("http://localhost:%s/api/v1/{{toLower .Name}}s", s.httpPort),
+                    bytes.NewBuffer(body),
+                )
+                s.Require().NoError(err)
+                req.Header.Set("Content-Type", "application/json")
+                return req
+            },
+            expectedStatus: http.StatusRequestEntityTooLarge,
+            expectedError: "request too large",
+        },
+        {
+            name: "Success/CORS",
+            setupFn: func() *http.Request {
+                req, err := http.NewRequest(
+                    http.MethodOptions,
+                    fmt.Sprintf("http://localhost:%s/api/v1/{{toLower .Name}}s", s.httpPort),
+                    nil,
+                )
+                s.Require().NoError(err)
+                req.Header.Set("Origin", "http://localhost:3000")
+                req.Header.Set("Access-Control-Request-Method", "POST")
+                return req
+            },
+            expectedStatus: http.StatusOK,
+            validateFn: func(t *testing.T, resp *http.Response, err error) {
+                require.NoError(t, err)
+                require.Equal(t, "*", resp.Header.Get("Access-Control-Allow-Origin"))
+                require.Contains(t, resp.Header.Get("Access-Control-Allow-Methods"), "POST")
+            },
+        },
+        {
+            name: "Success/Compression",
+            setupFn: func() *http.Request {
+                req, err := http.NewRequest(
+                    http.MethodGet,
+                    fmt.Sprintf("http://localhost:%s/api/v1/{{toLower .Name}}s", s.httpPort),
+                    nil,
+                )
+                s.Require().NoError(err)
+                req.Header.Set("Accept-Encoding", "gzip")
+                return req
+            },
+            expectedStatus: http.StatusOK,
+            validateFn: func(t *testing.T, resp *http.Response, err error) {
+                require.NoError(t, err)
+                require.Equal(t, "gzip", resp.Header.Get("Content-Encoding"))
+            },
+        },
+        {
+            name: "Success/ConditionalGet",
+            setupFn: func() *http.Request {
+                // Сначала получаем ETag
+                firstResp, err := http.Get(fmt.Sprintf("http://localhost:%s/api/v1/{{toLower .Name}}s", s.httpPort))
+                s.Require().NoError(err)
+                etag := firstResp.Header.Get("ETag")
+                s.Require().NotEmpty(etag)
+                
+                // Делаем запрос с If-None-Match
+                req, err := http.NewRequest(
+                    http.MethodGet,
+                    fmt.Sprintf("http://localhost:%s/api/v1/{{toLower .Name}}s", s.httpPort),
+                    nil,
+                )
+                s.Require().NoError(err)
+                req.Header.Set("If-None-Match", etag)
+                return req
+            },
+            expectedStatus: http.StatusNotModified,
+        },
+        {
+            name: "Success/CustomHeaders",
+            setupFn: func() *http.Request {
+                req, err := http.NewRequest(
+                    http.MethodGet,
+                    fmt.Sprintf("http://localhost:%s/api/v1/{{toLower .Name}}s", s.httpPort),
+                    nil,
+                )
+                s.Require().NoError(err)
+                req.Header.Set("X-Request-ID", "test-request-id")
+                return req
+            },
+            expectedStatus: http.StatusOK,
+            validateFn: func(t *testing.T, resp *http.Response, err error) {
+                require.NoError(t, err)
+                require.Equal(t, "test-request-id", resp.Header.Get("X-Request-ID"))
+            },
+        },
+    }
+
+    for _, tt := range tests {
+        s.Run(tt.name, func() {
+            s.cleanupDB()
+
+            var resp *http.Response
+            var err error
+
+            if tt.setupFn != nil {
+                req := tt.setupFn()
+                resp, err = http.DefaultClient.Do(req)
+            }
+
+            if resp != nil {
+                defer resp.Body.Close()
+                if tt.expectedError != "" {
+                    s.checkHTTPError(resp, tt.expectedStatus, tt.expectedError)
+                } else {
+                    s.Require().Equal(tt.expectedStatus, resp.StatusCode)
+                }
+            }
+
+            if tt.validateFn != nil {
+                tt.validateFn(s.T(), resp, err)
+            }
+        })
+    }
+}
+
+// Тесты на безопасность HTTP
+func (s *IntegrationTestSuite) Test{{.Name}}SecurityHTTP() {
+    tests := []struct {
+        name           string
+        setupFn        func() *http.Request
+        expectedStatus int
+        expectedError  string
+        validateFn     func(*testing.T, *http.Response, error)
+    }{
+        {
+            name: "Error/SQLInjection",
+            setupFn: func() *http.Request {
+                // Пытаемся внедрить SQL
+                maliciousID := "1; DROP TABLE {{toLower .Name}}s;--"
+                req, err := http.NewRequest(
+                    http.MethodGet,
+                    fmt.Sprintf("http://localhost:%s/api/v1/{{toLower .Name}}s/%s", s.httpPort, maliciousID),
+                    nil,
+                )
+                s.Require().NoError(err)
+                return req
+            },
+            expectedStatus: http.StatusBadRequest,
+            expectedError: "invalid id",
+        },
+        {
+            name: "Error/XSSAttempt",
+            setupFn: func() *http.Request {
+                // Пытаемся внедрить XSS
+                body := map[string]interface{}{
+                    {{range .Fields}}
+                    {{if ne .Name "Id"}}
+                    "{{toLower .Name}}": "<script>alert('xss')</script>",
+                    {{end}}
+                    {{end}}
+                }
+                jsonBody, err := json.Marshal(body)
+                s.Require().NoError(err)
+                
+                req, err := http.NewRequest(
+                    http.MethodPost,
+                    fmt.Sprintf("http://localhost:%s/api/v1/{{toLower .Name}}s", s.httpPort),
+                    bytes.NewBuffer(jsonBody),
+                )
+                s.Require().NoError(err)
+                req.Header.Set("Content-Type", "application/json")
+                return req
+            },
+            expectedStatus: http.StatusBadRequest,
+            expectedError: "invalid input",
+        },
+        {
+            name: "Error/NoAuthToken",
+            setupFn: func() *http.Request {
+                req, err := http.NewRequest(
+                    http.MethodPost,
+                    fmt.Sprintf("http://localhost:%s/api/v1/{{toLower .Name}}s", s.httpPort),
+                    nil,
+                )
+                s.Require().NoError(err)
+                return req
+            },
+            expectedStatus: http.StatusUnauthorized,
+            expectedError: "missing auth token",
+        },
+        {
+            name: "Error/InvalidAuthToken",
+            setupFn: func() *http.Request {
+                req, err := http.NewRequest(
+                    http.MethodPost,
+                    fmt.Sprintf("http://localhost:%s/api/v1/{{toLower .Name}}s", s.httpPort),
+                    nil,
+                )
+                s.Require().NoError(err)
+                req.Header.Set("Authorization", "Bearer invalid-token")
+                return req
+            },
+            expectedStatus: http.StatusUnauthorized,
+            expectedError: "invalid auth token",
+        },
+        {
+            name: "Error/RateLimitExceeded",
+            setupFn: func() *http.Request {
+                // Делаем много запросов для превышения лимита
+                for i := 0; i < 100; i++ {
+                    req, _ := http.NewRequest(
+                        http.MethodGet,
+                        fmt.Sprintf("http://localhost:%s/api/v1/{{toLower .Name}}s", s.httpPort),
+                        nil,
+                    )
+                    http.DefaultClient.Do(req)
+                }
+                
+                req, err := http.NewRequest(
+                    http.MethodGet,
+                    fmt.Sprintf("http://localhost:%s/api/v1/{{toLower .Name}}s", s.httpPort),
+                    nil,
+                )
+                s.Require().NoError(err)
+                return req
+            },
+            expectedStatus: http.StatusTooManyRequests,
+            expectedError: "rate limit exceeded",
+        },
+    }
+
+    for _, tt := range tests {
+        s.Run(tt.name, func() {
+            s.cleanupDB()
+
+            var resp *http.Response
+            var err error
+
+            if tt.setupFn != nil {
+                req := tt.setupFn()
+                resp, err = http.DefaultClient.Do(req)
+            }
+
+            if resp != nil {
+                defer resp.Body.Close()
+                if tt.expectedError != "" {
+                    s.checkHTTPError(resp, tt.expectedStatus, tt.expectedError)
+                } else {
+                    s.Require().Equal(tt.expectedStatus, resp.StatusCode)
+                }
+            }
+
+            if tt.validateFn != nil {
+                tt.validateFn(s.T(), resp, err)
+            }
+        })
+    }
+}
+
+// Тесты на производительность HTTP
+func (s *IntegrationTestSuite) Test{{.Name}}PerformanceHTTP() {
+    tests := []struct {
+        name           string
+        concurrency    int
+        requests       int
+        maxDuration   time.Duration
+        setupFn        func() *http.Request
+    }{
+        {
+            name:        "Load/Sequential100Requests",
+            concurrency: 1,
+            requests:    100,
+            maxDuration: 10 * time.Second,
+            setupFn: func() *http.Request {
+                req, err := http.NewRequest(
+                    http.MethodGet,
+                    fmt.Sprintf("http://localhost:%s/api/v1/{{toLower .Name}}s", s.httpPort),
+                    nil,
+                )
+                s.Require().NoError(err)
+                return req
+            },
+        },
+        {
+            name:        "Load/Concurrent100Requests",
+            concurrency: 10,
+            requests:    100,
+            maxDuration: 5 * time.Second,
+            setupFn: func() *http.Request {
+                req, err := http.NewRequest(
+                    http.MethodGet,
+                    fmt.Sprintf("http://localhost:%s/api/v1/{{toLower .Name}}s", s.httpPort),
+                    nil,
+                )
+                s.Require().NoError(err)
+                return req
+            },
+        },
+    }
+
+    for _, tt := range tests {
+        s.Run(tt.name, func() {
+            s.cleanupDB()
+
+            start := time.Now()
+            var wg sync.WaitGroup
+            errors := make(chan error, tt.requests)
+            
+            for i := 0; i < tt.requests; i++ {
+                if tt.concurrency > 1 {
+                    wg.Add(1)
+                    go func() {
+                        defer wg.Done()
+                        req := tt.setupFn()
+                        resp, err := http.DefaultClient.Do(req)
+                        if err != nil {
+                            errors <- err
+                            return
+                        }
+                        defer resp.Body.Close()
+                        if resp.StatusCode != http.StatusOK {
+                            errors <- fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+                        }
+                    }()
+                } else {
+                    req := tt.setupFn()
+                    resp, err := http.DefaultClient.Do(req)
+                    s.Require().NoError(err)
+                    resp.Body.Close()
+                    s.Require().Equal(http.StatusOK, resp.StatusCode)
+                }
+            }
+
+            if tt.concurrency > 1 {
+                wg.Wait()
+                close(errors)
+                for err := range errors {
+                    s.Require().NoError(err)
+                }
+            }
+
+            duration := time.Since(start)
+            s.Require().Less(duration, tt.maxDuration)
+            s.T().Logf("Test completed in %v", duration)
+        })
+    }
+}
+
+func (s *IntegrationTestSuite) Test{{.Name}}HTTP() {
+    // Create tests
+    s.Run("Create", func() {
+        s.cleanupDB()
+        
+        request := map[string]interface{}{
+            {{range .Fields}}
+            {{if ne .Name "Id"}}
+            "{{toLower .Name}}": s.generateTestData("{{.Type}}"),
+            {{end}}
+            {{end}}
+        }
+
+        body, err := json.Marshal(request)
+        s.Require().NoError(err)
+
+        resp, err := http.Post(
+            fmt.Sprintf("http://localhost:%s/api/v1/{{toLower .Name}}s", s.httpPort),
+            "application/json",
+            bytes.NewBuffer(body),
+        )
+        s.Require().NoError(err)
+        s.Require().Equal(http.StatusOK, resp.StatusCode)
+    })
+
+    // Get tests
+    s.Run("Get", func() {
+        s.cleanupDB()
+        
+        // Create test data first
+        createResp, err := s.{{toLower .Name}}.Create(context.Background(), &proto.Create{{.Name}}Request{
+            {{range .Fields}}
+            {{if ne .Name "Id"}}
+            {{.Name}}: s.generateTestData("{{.Type}}").({{.Type}}),
+            {{end}}
+            {{end}}
+        })
+        s.Require().NoError(err)
+
+        resp, err := http.Get(
+            fmt.Sprintf("http://localhost:%s/api/v1/{{toLower .Name}}s/%d", s.httpPort, createResp.Id),
+        )
+        s.Require().NoError(err)
+        s.Require().Equal(http.StatusOK, resp.StatusCode)
+    })
+}
+{{end}} 

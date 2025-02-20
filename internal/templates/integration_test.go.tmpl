@@ -1,0 +1,133 @@
+{{define "integration_test"}}
+package integration
+
+import (
+    "bytes"
+    "context"
+    "database/sql"
+    "encoding/json"
+    "fmt"
+    "math/rand"
+    "net/http"
+    "os"
+    "testing"
+    "time"
+    "sync"
+
+    "github.com/jmoiron/sqlx"
+    "github.com/ory/dockertest/v3"
+    "github.com/stretchr/testify/require"
+    "github.com/stretchr/testify/suite"
+    "google.golang.org/grpc"
+    "google.golang.org/grpc/codes"
+    "google.golang.org/grpc/credentials/insecure"
+    "google.golang.org/grpc/status"
+    "google.golang.org/grpc/metadata"
+
+    "app/internal/proto"
+    "app/internal/repository"
+)
+
+type IntegrationTestSuite struct {
+    suite.Suite
+    db         *sqlx.DB
+    pool       *dockertest.Pool
+    resource   *dockertest.Resource
+    grpcConn   *grpc.ClientConn
+    httpPort   string
+    grpcPort   string
+    r          *rand.Rand
+    {{ range . }}{{toLower .Name}} proto.{{.Name}}ServiceClient
+    {{ end }}
+}
+
+func (s *IntegrationTestSuite) SetupSuite() {
+    var err error
+
+    // Create a new dockertest pool
+    s.pool, err = dockertest.NewPool("")
+    s.Require().NoError(err)
+
+    // Start PostgreSQL container
+    s.resource, err = s.pool.Run("postgres", "13", []string{
+        "POSTGRES_PASSWORD=postgres",
+        "POSTGRES_USER=postgres",
+        "POSTGRES_DB=testdb",
+    })
+    s.Require().NoError(err)
+
+    // Get database URL
+    dbURL := fmt.Sprintf("postgres://postgres:postgres@localhost:%s/testdb?sslmode=disable",
+        s.resource.GetPort("5432/tcp"))
+
+    // Wait for container to be ready
+    err = s.pool.Retry(func() error {
+        s.db, err = sqlx.Connect("postgres", dbURL)
+        return err
+    })
+    s.Require().NoError(err)
+
+    // Run migrations
+    // TODO: Add your migration logic here
+
+    // Initialize random
+    s.r = rand.New(rand.NewSource(time.Now().UnixNano()))
+
+    // Set ports
+    s.httpPort = os.Getenv("TEST_HTTP_PORT")
+    if s.httpPort == "" {
+        s.httpPort = "8080"
+    }
+    s.grpcPort = os.Getenv("TEST_GRPC_PORT")
+    if s.grpcPort == "" {
+        s.grpcPort = "50051"
+    }
+
+    // Connect to gRPC server
+    s.grpcConn, err = grpc.Dial(
+        fmt.Sprintf("localhost:%s", s.grpcPort),
+        grpc.WithTransportCredentials(insecure.NewCredentials()),
+    )
+    s.Require().NoError(err)
+
+    // Initialize gRPC clients
+    {{ range . }}
+    s.{{toLower .Name}} = proto.New{{.Name}}ServiceClient(s.grpcConn)
+    {{ end }}
+}
+
+func (s *IntegrationTestSuite) TearDownSuite() {
+    // Close gRPC connection
+    if s.grpcConn != nil {
+        s.grpcConn.Close()
+    }
+
+    // Close database connection
+    if s.db != nil {
+        s.db.Close()
+    }
+
+    // Remove test container
+    if s.resource != nil {
+        s.pool.Purge(s.resource)
+    }
+}
+
+{{ range . }}
+// HTTP Tests for {{.Name}}
+{{template "http_tests" .}}
+
+// gRPC Tests for {{.Name}}
+{{template "grpc_tests" .}}
+
+// Special Tests for {{.Name}}
+{{template "special_tests" .}}
+
+// Helper functions for {{.Name}}
+{{template "test_helpers" .}}
+{{ end }}
+
+func TestIntegrationSuite(t *testing.T) {
+    suite.Run(t, new(IntegrationTestSuite))
+}
+{{end}} 

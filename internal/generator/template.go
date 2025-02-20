@@ -14,22 +14,32 @@ import (
 	"github.com/iancoleman/strcase"
 )
 
+func toCamelCase(s string) string {
+	return strcase.ToCamel(s)
+}
+
 type TemplateGenerator struct {
 	templates *jet.Set
 }
 
 func NewTemplateGenerator() *TemplateGenerator {
+	// Get absolute path to templates directory
+	dir, err := os.Getwd()
+	if err != nil {
+		log.Fatal(err)
+	}
+	templatesPath := filepath.Join(dir, "internal", "templates")
+
 	views := jet.NewSet(
-		jet.NewOSFileSystemLoader("internal/templates"),
+		jet.NewOSFileSystemLoader(templatesPath),
 		jet.InDevelopmentMode(),
 	)
 
-	views.AddGlobalFunc("toLower", func(args jet.Arguments) reflect.Value {
-		return reflect.ValueOf(strings.ToLower(args.Get(0).String()))
-	})
-	views.AddGlobalFunc("toCamel", func(args jet.Arguments) reflect.Value {
-		return reflect.ValueOf(strcase.ToCamel(args.Get(0).String()))
-	})
+	// Add custom functions
+	views.AddGlobal("toLower", strings.ToLower)
+	views.AddGlobal("toUpper", strings.ToUpper)
+	views.AddGlobal("toCamel", toCamelCase)
+
 	views.AddGlobalFunc("toLowerCamel", func(args jet.Arguments) reflect.Value {
 		return reflect.ValueOf(strcase.ToLowerCamel(args.Get(0).String()))
 	})
