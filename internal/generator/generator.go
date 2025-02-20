@@ -89,3 +89,11 @@ func (g *Generator) parseMessage(message *descriptorpb.DescriptorProto) (*Model,
 		Fields: fields,
 	}, nil
 }
+
+func (g *Generator) generateForModel(model *Model, outputDir string) error {
+	if err := g.template.generateModelFiles(model, outputDir); err != nil {
+		return fmt.Errorf("failed to generate files for model %s: %w", model.Name, err)
+	}
+
+	return nil
+}

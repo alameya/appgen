@@ -3,9 +3,7 @@ package {{toLower .Name}}
 import (
     "context"
     "fmt"
-    "net"
 
-    "google.golang.org/grpc"
     "app/internal/proto"
     "app/internal/repository"
     "app/internal/models"
@@ -21,18 +19,41 @@ func NewServer(repo *repository.Repository) *Server {
 }
 
 func (s *Server) Create(ctx context.Context, req *proto.Create{{.Name}}Request) (*proto.{{.Name}}, error) {
-    // TODO: Implement
-    return nil, nil
+    item := &models.{{.Name}}{
+        {{range .Fields}}
+        {{if ne .Name "Id"}}{{toCamel .Name}}: req.{{toCamel .Name}},{{end}}
+        {{end}}
+    }
+
+    result, err := s.repo.{{.Name}}.Create(ctx, item)
+    if err != nil {
+        return nil, fmt.Errorf("failed to create {{toLower .Name}}: %w", err)
+    }
+
+    return convert{{.Name}}ToProto(result), nil
 }
 
 func (s *Server) Get(ctx context.Context, req *proto.Get{{.Name}}Request) (*proto.{{.Name}}, error) {
-    // TODO: Implement
-    return nil, nil
+    result, err := s.repo.{{.Name}}.Get(ctx, req.Id)
+    if err != nil {
+        return nil, fmt.Errorf("failed to get {{toLower .Name}}: %w", err)
+    }
+
+    return convert{{.Name}}ToProto(result), nil
 }
 
 func (s *Server) List(ctx context.Context, req *proto.List{{.Name}}Request) (*proto.List{{.Name}}Response, error) {
-    // TODO: Implement
-    return nil, nil
+    results, err := s.repo.{{.Name}}.List(ctx)
+    if err != nil {
+        return nil, fmt.Errorf("failed to list {{toLower .Name}}s: %w", err)
+    }
+
+    items := make([]*proto.{{.Name}}, len(results))
+    for i, item := range results {
+        items[i] = convert{{.Name}}ToProto(item)
+    }
+
+    return &proto.List{{.Name}}Response{Items: items}, nil
 }
 
 func convert{{.Name}}ToProto(item *models.{{.Name}}) *proto.{{.Name}} {

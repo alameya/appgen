@@ -203,3 +203,40 @@ func (t *TemplateGenerator) generateFilesForModel(model *Model, outputDir string
 
 	return nil
 }
+
+func (t *TemplateGenerator) generateModelFiles(model *Model, outputDir string) error {
+	files := map[string]string{
+		"repository_model.go.tmpl": filepath.Join("internal/repository", strings.ToLower(model.Name), "repository.go"),
+		"handler.go.tmpl":          filepath.Join("internal/handler", strings.ToLower(model.Name), "handler.go"),
+		"service.go.tmpl":          filepath.Join("internal/service", strings.ToLower(model.Name), "service.go"),
+		"models.go.tmpl":           filepath.Join("internal/models", strings.ToLower(model.Name)+".go"),
+		"grpc.go.tmpl":             filepath.Join("internal/grpc", strings.ToLower(model.Name), "server.go"),
+	}
+
+	for tmpl, path := range files {
+		if err := t.generateFromTemplate(tmpl, filepath.Join(outputDir, path), model); err != nil {
+			return fmt.Errorf("failed to generate %s: %w", path, err)
+		}
+	}
+
+	return nil
+}
+
+func (t *TemplateGenerator) generateFromTemplate(templateName, filePath string, model *Model) error {
+	tmpl, ok := t.templates[templateName]
+	if !ok {
+		return fmt.Errorf("template %s not found", templateName)
+	}
+
+	var buf bytes.Buffer
+	if err := tmpl.Execute(&buf, model); err != nil {
+		return fmt.Errorf("failed to execute template %s: %w", templateName, err)
+	}
+
+	log.Printf("Generating file: %s", filePath)
+	if err := os.WriteFile(filePath, buf.Bytes(), 0644); err != nil {
+		return fmt.Errorf("failed to write file %s: %w", filePath, err)
+	}
+
+	return nil
+}

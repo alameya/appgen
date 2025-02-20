@@ -16,7 +16,9 @@ import (
 	"app/internal/proto"
 	{{range .}}
 	{{toLower .Name}}Handler "app/internal/handler/{{toLower .Name}}"
-	{{toLower .Name}}Service "app/internal/service/{{toLower .Name}}"{{end}}
+	{{toLower .Name}}Service "app/internal/service/{{toLower .Name}}"
+	{{toLower .Name}}Grpc "app/internal/grpc/{{toLower .Name}}"
+	{{end}}
 )
 
 func main() {
@@ -64,7 +66,7 @@ func main() {
 	}
 	s := grpc.NewServer()
 	{{range .}}
-	proto.Register{{.Name}}ServiceServer(s, {{toLower .Name}}.NewServer(repo))
+	proto.Register{{.Name}}ServiceServer(s, {{toLower .Name}}Grpc.NewServer(repo))
 	{{end}}
 	go func() {
 		log.Printf("gRPC server listening at %v", lis.Addr())
