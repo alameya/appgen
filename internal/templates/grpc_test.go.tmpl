@@ -19,9 +19,9 @@ type GRPCTestSuite struct {
     ctx        context.Context
     cancel     context.CancelFunc
     conn       *grpc.ClientConn
-    @for _, model in .@
-    @toLower(model.Name)@ proto.@model.Name@ServiceClient
-    @end@
+    {{ range . }}
+    {{ toLower(.Name) }} proto.{{ .Name }}ServiceClient
+    {{ end }}
 }
 
 func (s *GRPCTestSuite) SetupSuite() {
@@ -31,9 +31,9 @@ func (s *GRPCTestSuite) SetupSuite() {
     s.conn, err = grpc.Dial("localhost:50051", grpc.WithInsecure())
     s.Require().NoError(err)
 
-    @for _, model in .@
-    s.@toLower(model.Name)@ = proto.New@model.Name@ServiceClient(s.conn)
-    @end@
+    {{ range . }}
+    s.{{ toLower(.Name) }} = proto.New{{ .Name }}ServiceClient(s.conn)
+    {{ end }}
 }
 
 func (s *GRPCTestSuite) TearDownSuite() {
@@ -43,29 +43,33 @@ func (s *GRPCTestSuite) TearDownSuite() {
     }
 }
 
-@for _, model in .@
-func (s *GRPCTestSuite) Test@model.Name@CRUD() {
+{{ range . }}
+func (s *GRPCTestSuite) Test{{ .Name }}CRUD() {
     tests := []struct {
         name        string
-        setup       func() (*proto.@model.Name@, error)
-        run         func(*proto.@model.Name@) error
-        validate    func(*proto.@model.Name@, error)
+        setup       func() (*proto.{{ .Name }}, error)
+        run         func(*proto.{{ .Name }}) error
+        validate    func(*proto.{{ .Name }}, error)
         wantErr     bool
         wantErrCode codes.Code
     }{
         {
             name: "Create_Success",
-            run: func(_ *proto.@model.Name@) error {
-                _, err := s.@toLower(model.Name)@.Create(s.ctx, &proto.Create@model.Name@Request{
-                    @for _, field in model.Fields@
-                    @if field.Name != "Id"@
-                    @field.Name@: "test@field.Name@",
-                    @end@
-                    @end@
+            run: func(_ *proto.{{ .Name }}) error {
+                _, err := s.{{ toLower(.Name) }}.Create(s.ctx, &proto.Create{{ .Name }}Request{
+                    {{ range .Fields }}
+                    {{ if .Name != "Id" }}
+                    {{ .Name }}: {{ if .Type == "string" }}"test{{ .Name }}"
+                    {{ else if .Type == "int64" }}1
+                    {{ else if .Type == "float64" }}1.0
+                    {{ else if .Type == "bool" }}true
+                    {{ else }}""{{ end }},
+                    {{ end }}
+                    {{ end }}
                 })
                 return err
             },
-            validate: func(got *proto.@model.Name@, err error) {
+            validate: func(got *proto.{{ .Name }}, err error) {
                 s.Require().NoError(err)
                 s.Require().NotNil(got)
                 s.Require().NotZero(got.Id)
@@ -73,30 +77,34 @@ func (s *GRPCTestSuite) Test@model.Name@CRUD() {
         },
         {
             name: "Get_Success",
-            setup: func() (*proto.@model.Name@, error) {
-                return s.@toLower(model.Name)@.Create(s.ctx, &proto.Create@model.Name@Request{
-                    @for _, field in model.Fields@
-                    @if field.Name != "Id"@
-                    @field.Name@: "test@field.Name@",
-                    @end@
-                    @end@
+            setup: func() (*proto.{{ .Name }}, error) {
+                return s.{{ toLower(.Name) }}.Create(s.ctx, &proto.Create{{ .Name }}Request{
+                    {{ range .Fields }}
+                    {{ if .Name != "Id" }}
+                    {{ .Name }}: {{ if .Type == "string" }}"test{{ .Name }}"
+                    {{ else if .Type == "int64" }}1
+                    {{ else if .Type == "float64" }}1.0
+                    {{ else if .Type == "bool" }}true
+                    {{ else }}""{{ end }},
+                    {{ end }}
+                    {{ end }}
                 })
             },
-            run: func(created *proto.@model.Name@) error {
-                _, err := s.@toLower(model.Name)@.Get(s.ctx, &proto.Get@model.Name@Request{
+            run: func(created *proto.{{ .Name }}) error {
+                _, err := s.{{ toLower(.Name) }}.Get(s.ctx, &proto.Get{{ .Name }}Request{
                     Id: created.Id,
                 })
                 return err
             },
-            validate: func(got *proto.@model.Name@, err error) {
+            validate: func(got *proto.{{ .Name }}, err error) {
                 s.Require().NoError(err)
                 s.Require().NotNil(got)
             },
         },
         {
             name: "Get_NotFound",
-            run: func(_ *proto.@model.Name@) error {
-                _, err := s.@toLower(model.Name)@.Get(s.ctx, &proto.Get@model.Name@Request{
+            run: func(_ *proto.{{ .Name }}) error {
+                _, err := s.{{ toLower(.Name) }}.Get(s.ctx, &proto.Get{{ .Name }}Request{
                     Id: 999999,
                 })
                 return err
@@ -106,57 +114,73 @@ func (s *GRPCTestSuite) Test@model.Name@CRUD() {
         },
         {
             name: "Update_Success",
-            setup: func() (*proto.@model.Name@, error) {
-                return s.@toLower(model.Name)@.Create(s.ctx, &proto.Create@model.Name@Request{
-                    @for _, field in model.Fields@
-                    @if field.Name != "Id"@
-                    @field.Name@: "test@field.Name@",
-                    @end@
-                    @end@
+            setup: func() (*proto.{{ .Name }}, error) {
+                return s.{{ toLower(.Name) }}.Create(s.ctx, &proto.Create{{ .Name }}Request{
+                    {{ range .Fields }}
+                    {{ if .Name != "Id" }}
+                    {{ .Name }}: {{ if .Type == "string" }}"test{{ .Name }}"
+                    {{ else if .Type == "int64" }}1
+                    {{ else if .Type == "float64" }}1.0
+                    {{ else if .Type == "bool" }}true
+                    {{ else }}""{{ end }},
+                    {{ end }}
+                    {{ end }}
                 })
             },
-            run: func(created *proto.@model.Name@) error {
-                _, err := s.@toLower(model.Name)@.Update(s.ctx, &proto.Update@model.Name@Request{
+            run: func(created *proto.{{ .Name }}) error {
+                _, err := s.{{ toLower(.Name) }}.Update(s.ctx, &proto.Update{{ .Name }}Request{
                     Id: created.Id,
-                    @for _, field in model.Fields@
-                    @if field.Name != "Id"@
-                    @field.Name@: "updated@field.Name@",
-                    @end@
-                    @end@
+                    {{ range .Fields }}
+                    {{ if .Name != "Id" }}
+                    {{ .Name }}: {{ if .Type == "string" }}"updated{{ .Name }}"
+                    {{ else if .Type == "int64" }}2
+                    {{ else if .Type == "float64" }}2.0
+                    {{ else if .Type == "bool" }}false
+                    {{ else }}""{{ end }},
+                    {{ end }}
+                    {{ end }}
                 })
                 return err
             },
-            validate: func(got *proto.@model.Name@, err error) {
+            validate: func(got *proto.{{ .Name }}, err error) {
                 s.Require().NoError(err)
                 s.Require().NotNil(got)
-                @for _, field in model.Fields@
-                @if field.Name != "Id"@
-                s.Require().Equal("updated@field.Name@", got.@field.Name@)
-                @end@
-                @end@
+                {{ range .Fields }}
+                {{ if .Name != "Id" }}
+                s.Require().Equal({{ if .Type == "string" }}"updated{{ .Name }}"
+                {{ else if .Type == "int64" }}int64(2)
+                {{ else if .Type == "float64" }}2.0
+                {{ else if .Type == "bool" }}false
+                {{ else }}""{{ end }}, got.{{ .Name }})
+                {{ end }}
+                {{ end }}
             },
         },
         {
             name: "Delete_Success",
-            setup: func() (*proto.@model.Name@, error) {
-                return s.@toLower(model.Name)@.Create(s.ctx, &proto.Create@model.Name@Request{
-                    @for _, field in model.Fields@
-                    @if field.Name != "Id"@
-                    @field.Name@: "test@field.Name@",
-                    @end@
-                    @end@
+            setup: func() (*proto.{{ .Name }}, error) {
+                return s.{{ toLower(.Name) }}.Create(s.ctx, &proto.Create{{ .Name }}Request{
+                    {{ range .Fields }}
+                    {{ if .Name != "Id" }}
+                    {{ .Name }}: {{ if .Type == "string" }}"test{{ .Name }}"
+                    {{ else if .Type == "int64" }}1
+                    {{ else if .Type == "float64" }}1.0
+                    {{ else if .Type == "bool" }}true
+                    {{ else }}""{{ end }},
+                    {{ end }}
+                    {{ end }}
                 })
             },
-            run: func(created *proto.@model.Name@) error {
-                _, err := s.@toLower(model.Name)@.Delete(s.ctx, &proto.Delete@model.Name@Request{
+            run: func(created *proto.{{ .Name }}) error {
+                _, err := s.{{ toLower(.Name) }}.Delete(s.ctx, &proto.Delete{{ .Name }}Request{
                     Id: created.Id,
                 })
                 return err
             },
-            validate: func(_ *proto.@model.Name@, err error) {
+            validate: func(_ *proto.{{ .Name }}, err error) {
                 s.Require().NoError(err)
                 // Verify deletion
-                _, err = s.@toLower(model.Name)@.Get(s.ctx, &proto.Get@model.Name@Request{Id: 1})
+                _, err = s.{{ toLower(.Name) }}.Get(s.ctx, &proto.Get{{ .Name }}Request{Id: 1})
                 s.Require().Error(err)
                 st, ok := status.FromError(err)
                 s.Require().True(ok)
@@ -167,7 +191,7 @@ func (s *GRPCTestSuite) Test@model.Name@CRUD() {
 
     for _, tt := range tests {
         s.Run(tt.name, func() {
-            var setupData *proto.@model.Name@
+            var setupData *proto.{{ .Name }}
             var err error
             
             if tt.setup != nil {
@@ -191,7 +215,7 @@ func (s *GRPCTestSuite) Test@model.Name@CRUD() {
         })
     }
 }
-@end@
+{{ end }}
 
 func TestGRPCSuite(t *testing.T) {
     suite.Run(t, new(GRPCTestSuite))

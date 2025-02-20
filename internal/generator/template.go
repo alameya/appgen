@@ -40,6 +40,12 @@ func NewTemplateGenerator() *TemplateGenerator {
 	views.AddGlobal("toLower", strings.ToLower)
 	views.AddGlobal("toUpper", strings.ToUpper)
 	views.AddGlobal("toCamel", toCamelCase)
+	views.AddGlobal("eq", func(a, b interface{}) bool {
+		return a == b
+	})
+	views.AddGlobal("ne", func(a, b interface{}) bool {
+		return a != b
+	})
 
 	views.AddGlobalFunc("toLowerCamel", func(args jet.Arguments) reflect.Value {
 		return reflect.ValueOf(strcase.ToLowerCamel(args.Get(0).String()))
