@@ -26,9 +26,9 @@ go install github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-openapiv2@latest
 protoc \
     --proto_path=. \
     --proto_path=/usr/local/include \
-    --go_out=paths=source_relative:out/internal/proto \
-    --go-grpc_out=paths=source_relative:out/internal/proto \
-    --grpc-gateway_out=paths=source_relative:out/internal/proto \
+    --go_out=module=app/internal/proto:out \
+    --go-grpc_out=module=app/internal/proto:out \
+    --grpc-gateway_out=module=app/internal/proto:out \
     --openapiv2_out=out/api \
     proto/*.proto
 
