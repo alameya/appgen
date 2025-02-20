@@ -24,9 +24,7 @@ func (r *{{.Name}}Repository) Create(ctx context.Context, item *models.{{.Name}}
     // Формируем список колонок и значений, исключая Id
     columns := []string{
         {{range .Fields}}
-        {{if toLower(.Name) != "id"}}
-        "{{toLower(.DbName)}}",
-        {{end}}
+        {{if toLower(.Name) != "id"}}"{{toLower(.DbName)}}",{{end}}
         {{end}}
         "created_at",
         "updated_at",
@@ -34,9 +32,7 @@ func (r *{{.Name}}Repository) Create(ctx context.Context, item *models.{{.Name}}
 
     values := []interface{}{
         {{range .Fields}}
-        {{if toLower(.Name) != "id"}}
-        item.{{toCamel(.Name)}},
-        {{end}}
+        {{if toLower(.Name) != "id"}}item.{{toCamel(.Name)}},{{end}}
         {{end}}
         sq.Expr("CURRENT_TIMESTAMP"),
         sq.Expr("CURRENT_TIMESTAMP"),
