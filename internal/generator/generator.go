@@ -61,6 +61,7 @@ func (g *Generator) generateCommonFiles(models []*Model, outputDir string) error
 		"Dockerfile.tmpl":         filepath.Join(outputDir, "Dockerfile"),
 		"env.tmpl":                filepath.Join(outputDir, ".env"),
 		"repository.go.tmpl":      filepath.Join(outputDir, "internal", "repository", "repository.go"),
+		"gitlab-ci.yml.tmpl":      filepath.Join(outputDir, ".gitlab-ci.yml"),
 	}
 
 	// Генерируем каждый файл из шаблона
