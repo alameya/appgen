@@ -1,36 +1,19 @@
 -- +goose Up
 -- +goose StatementBegin
 -- Create {{.Name}}s table
-CREATE TABLE IF NOT EXISTS {{toLower(.Name)}}s (
-    {{ tableName := toLower(.Name)}}
+CREATE TABLE IF NOT EXISTS {{toLower (.Name)}}s (
     id BIGSERIAL PRIMARY KEY,
     {{- range .Fields}}
     {{- if .Name != "id" }}
-    {{toLower(.DbName)}} {{.SqlType}},
+    {{toLower (.DbName)}} {{.SqlType}},
     {{- end}}
     {{- end}}
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
-
--- Create foreign keys and indexes
-{{- range .Fields}}
-{{- if hasSuffix(.Name, "_id")}}
-
-{{- end}}
-{{- end}}
 -- +goose StatementEnd
 
 -- +goose Down
 -- +goose StatementBegin
-{{- range .Fields}}
-{{- if hasSuffix(.Name, "_id")}}
-ALTER TABLE {{toLower(.Name)}}s 
-    DROP CONSTRAINT IF EXISTS fk_{{toLower(.Name)}}s_{{toLower(.Name)}};
-
-DROP INDEX IF EXISTS idx_{{toLower(.Name)}}s_{{toLower(.Name)}};
-{{- end}}
-{{- end}}
-
-DROP TABLE IF EXISTS {{toLower(.Name)}}s;
+DROP TABLE IF EXISTS {{toLower (.Name)}}s;
 -- +goose StatementEnd 
