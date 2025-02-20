@@ -16,9 +16,9 @@ mkdir -p out/internal/proto
 # Generate proto files
 echo "Generating proto files..."
 protoc --go_out=out/internal/proto \
-    --go_opt=paths=source_relative \
+    --go_opt=module=app/internal/proto \
     --go-grpc_out=out/internal/proto \
-    --go-grpc_opt=paths=source_relative \
+    --go-grpc_opt=module=app/internal/proto \
     proto/*.proto
 
 # Generate code
