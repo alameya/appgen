@@ -57,15 +57,9 @@ func (s *GRPCTestSuite) Test{{ .Name }}CRUD() {
             name: "Create_Success",
             run: func(_ *proto.{{ .Name }}) error {
                 _, err := s.{{ toLower(.Name) }}.Create(s.ctx, &proto.Create{{ .Name }}Request{
-                    {{ range .Fields }}
-                    {{ if .Name != "Id" }}
-                    {{ .Name }}: {{ if .Type == "string" }}"test{{ .Name }}"
-                    {{ else if .Type == "int64" }}1
-                    {{ else if .Type == "float64" }}1.0
-                    {{ else if .Type == "bool" }}true
-                    {{ else }}""{{ end }},
-                    {{ end }}
-                    {{ end }}
+                    {{ range .Fields }}{{ if .Name != "Id" }}
+                    {{ .Name }}: {{ if .Type == "string" }}"test{{ .Name }}"{{ else if .Type == "int64" }}1{{ else if .Type == "float64" }}1.0{{ else if .Type == "bool" }}true{{ else }}""{{ end }},
+                    {{ end }}{{ end }}
                 })
                 return err
             },
@@ -79,15 +73,9 @@ func (s *GRPCTestSuite) Test{{ .Name }}CRUD() {
             name: "Get_Success",
             setup: func() (*proto.{{ .Name }}, error) {
                 return s.{{ toLower(.Name) }}.Create(s.ctx, &proto.Create{{ .Name }}Request{
-                    {{ range .Fields }}
-                    {{ if .Name != "Id" }}
-                    {{ .Name }}: {{ if .Type == "string" }}"test{{ .Name }}"
-                    {{ else if .Type == "int64" }}1
-                    {{ else if .Type == "float64" }}1.0
-                    {{ else if .Type == "bool" }}true
-                    {{ else }}""{{ end }},
-                    {{ end }}
-                    {{ end }}
+                    {{ range .Fields }}{{ if .Name != "Id" }}
+                    {{ .Name }}: {{ if .Type == "string" }}"test{{ .Name }}"{{ else if .Type == "int64" }}1{{ else if .Type == "float64" }}1.0{{ else if .Type == "bool" }}true{{ else }}""{{ end }},
+                    {{ end }}{{ end }}
                 })
             },
             run: func(created *proto.{{ .Name }}) error {
@@ -116,59 +104,35 @@ func (s *GRPCTestSuite) Test{{ .Name }}CRUD() {
             name: "Update_Success",
             setup: func() (*proto.{{ .Name }}, error) {
                 return s.{{ toLower(.Name) }}.Create(s.ctx, &proto.Create{{ .Name }}Request{
-                    {{ range .Fields }}
-                    {{ if .Name != "Id" }}
-                    {{ .Name }}: {{ if .Type == "string" }}"test{{ .Name }}"
-                    {{ else if .Type == "int64" }}1
-                    {{ else if .Type == "float64" }}1.0
-                    {{ else if .Type == "bool" }}true
-                    {{ else }}""{{ end }},
-                    {{ end }}
-                    {{ end }}
+                    {{ range .Fields }}{{ if .Name != "Id" }}
+                    {{ .Name }}: {{ if .Type == "string" }}"test{{ .Name }}"{{ else if .Type == "int64" }}1{{ else if .Type == "float64" }}1.0{{ else if .Type == "bool" }}true{{ else }}""{{ end }},
+                    {{ end }}{{ end }}
                 })
             },
             run: func(created *proto.{{ .Name }}) error {
                 _, err := s.{{ toLower(.Name) }}.Update(s.ctx, &proto.Update{{ .Name }}Request{
                     Id: created.Id,
-                    {{ range .Fields }}
-                    {{ if .Name != "Id" }}
-                    {{ .Name }}: {{ if .Type == "string" }}"updated{{ .Name }}"
-                    {{ else if .Type == "int64" }}2
-                    {{ else if .Type == "float64" }}2.0
-                    {{ else if .Type == "bool" }}false
-                    {{ else }}""{{ end }},
-                    {{ end }}
-                    {{ end }}
+                    {{ range .Fields }}{{ if .Name != "Id" }}
+                    {{ .Name }}: {{ if .Type == "string" }}"updated{{ .Name }}"{{ else if .Type == "int64" }}2{{ else if .Type == "float64" }}2.0{{ else if .Type == "bool" }}false{{ else }}""{{ end }},
+                    {{ end }}{{ end }}
                 })
                 return err
             },
             validate: func(got *proto.{{ .Name }}, err error) {
                 s.Require().NoError(err)
                 s.Require().NotNil(got)
-                {{ range .Fields }}
-                {{ if .Name != "Id" }}
-                s.Require().Equal({{ if .Type == "string" }}"updated{{ .Name }}"
-                {{ else if .Type == "int64" }}int64(2)
-                {{ else if .Type == "float64" }}2.0
-                {{ else if .Type == "bool" }}false
-                {{ else }}""{{ end }}, got.{{ .Name }})
-                {{ end }}
-                {{ end }}
+                {{ range .Fields }}{{ if .Name != "Id" }}
+                s.Require().Equal({{ if .Type == "string" }}"updated{{ .Name }}"{{ else if .Type == "int64" }}int64(2){{ else if .Type == "float64" }}2.0{{ else if .Type == "bool" }}false{{ else }}""{{ end }}, got.{{ .Name }})
+                {{ end }}{{ end }}
             },
         },
         {
             name: "Delete_Success",
             setup: func() (*proto.{{ .Name }}, error) {
                 return s.{{ toLower(.Name) }}.Create(s.ctx, &proto.Create{{ .Name }}Request{
-                    {{ range .Fields }}
-                    {{ if .Name != "Id" }}
-                    {{ .Name }}: {{ if .Type == "string" }}"test{{ .Name }}"
-                    {{ else if .Type == "int64" }}1
-                    {{ else if .Type == "float64" }}1.0
-                    {{ else if .Type == "bool" }}true
-                    {{ else }}""{{ end }},
-                    {{ end }}
-                    {{ end }}
+                    {{ range .Fields }}{{ if .Name != "Id" }}
+                    {{ .Name }}: {{ if .Type == "string" }}"test{{ .Name }}"{{ else if .Type == "int64" }}1{{ else if .Type == "float64" }}1.0{{ else if .Type == "bool" }}true{{ else }}""{{ end }},
+                    {{ end }}{{ end }}
                 })
             },
             run: func(created *proto.{{ .Name }}) error {
