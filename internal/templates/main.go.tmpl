@@ -14,7 +14,9 @@ import (
 
 	"app/internal/repository"
 	"app/internal/proto"
+	{{$first := true}}
 	{{range .}}
+	{{if $first}}{{$first = false}}{{else}},{{end}}
 	{{toLower .Name}}Handler "app/internal/handler/{{toLower .Name}}"
 	{{toLower .Name}}Service "app/internal/service/{{toLower .Name}}"
 	{{end}}
