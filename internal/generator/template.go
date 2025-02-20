@@ -78,7 +78,8 @@ func (t *TemplateGenerator) generateFilesForModel(model *Model, outputDir string
 
 	// Получаем текущее время для версии миграции
 	now := time.Now()
-	version := now.Format("20060102150405") // YYYYMMDDHHMMSS
+	version := now.Format("20060102150405")     // YYYYMMDDHHMMSS
+	suffix := fmt.Sprintf("%02d", modelIndex+1) // 01, 02, 03, etc.
 
 	// Генерируем файлы для модели
 	files := map[string]string{
@@ -86,7 +87,7 @@ func (t *TemplateGenerator) generateFilesForModel(model *Model, outputDir string
 		"handler.go.tmpl":          filepath.Join(outputDir, "internal", "handler", strings.ToLower(model.Name), "handler.go"),
 		"service.go.tmpl":          filepath.Join(outputDir, "internal", "service", strings.ToLower(model.Name), "service.go"),
 		"models.go.tmpl":           filepath.Join(outputDir, "internal", "models", strings.ToLower(model.Name)+".go"),
-		"migration.sql.tmpl":       filepath.Join(outputDir, "migrations", fmt.Sprintf("%s%02d_create_%s.sql", version, modelIndex+1, strings.ToLower(model.Name))),
+		"migration.sql.tmpl":       filepath.Join(outputDir, "migrations", fmt.Sprintf("%s%s_create_%s.sql", version, suffix, strings.ToLower(model.Name))),
 		"grpc.go.tmpl":             filepath.Join(outputDir, "internal", "grpc", strings.ToLower(model.Name), "server.go"),
 	}
 
