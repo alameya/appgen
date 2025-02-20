@@ -20,10 +20,10 @@ func NewServer(repo *repository.Repository) *Server {
 
 func (s *Server) Create(ctx context.Context, req *proto.Create{{.Name}}Request) (*proto.{{.Name}}, error) {
     item := &models.{{.Name}}{
-        {{range .Fields}}
-        {{if ne .Name "Id"}}
+        {{- range .Fields -}}
+        {{- if ne .Name "Id" }}
         {{toCamel .Name}}: req.{{toCamel .Name}},
-        {{end}}
+        {{- end -}}
         {{end}}
     }
 
@@ -60,7 +60,7 @@ func (s *Server) List(ctx context.Context, req *proto.List{{.Name}}Request) (*pr
 
 func convert{{.Name}}ToProto(item *models.{{.Name}}) *proto.{{.Name}} {
     return &proto.{{.Name}}{
-        {{range .Fields}}
+        {{- range .Fields -}}
         {{toCamel .Name}}: item.{{toCamel .Name}},
         {{end}}
     }
