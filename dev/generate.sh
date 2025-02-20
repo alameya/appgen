@@ -7,6 +7,10 @@ set -e
 echo "Cleaning output directory..."
 rm -rf out/
 
+# Create required directories
+echo "Creating directories..."
+mkdir -p out/api
+
 # Generate code
 echo "Generating code..."
 go run cmd/generator/main.go -proto="proto/*.proto" -output=out
@@ -49,4 +53,5 @@ wait $SERVICE_PID
 echo "Done! You can now run the server with: cd out && go run cmd/main.go"
 
 # Создаем директорию для API документации
+echo "Creating directories..."
 mkdir -p out/api 

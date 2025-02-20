@@ -54,6 +54,7 @@ func (t *TemplateGenerator) Generate(models []*Model, outputDir string) error {
 		"postman_collection.json.tmpl",
 		"env.tmpl",
 		"migrate.sh.tmpl",
+		"swagger.yaml.tmpl",
 	}
 
 	log.Printf("Loading templates: %v", files)
