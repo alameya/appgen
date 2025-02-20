@@ -48,7 +48,7 @@ git push origin main || true
 
 echo "Starting the service..."
 cd out
-go run cmd/main.go &
+go run cmd/app/main.go &
 SERVICE_PID=$!
 
 # Trap Ctrl+C and kill the service
@@ -57,4 +57,4 @@ trap 'echo "Stopping service..."; kill $SERVICE_PID; exit' INT
 # Wait for service to finish (it won't unless interrupted)
 wait $SERVICE_PID
 
-echo "Done! You can now run the server with: cd out && go run cmd/main.go" 
+echo "Done! You can now run the server with: cd out && go run cmd/app/main.go" 

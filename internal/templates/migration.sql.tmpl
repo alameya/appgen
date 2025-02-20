@@ -4,7 +4,7 @@
 CREATE TABLE IF NOT EXISTS {{toLower(.Name)}}s (
     id BIGSERIAL PRIMARY KEY,
     {{range .Fields}}
-    {{if .Name != "Id"}}
+    {{if (.Name != "Id" && .Name != "id")}}
     {{toLower(.DbName)}} {{.SqlType}},
     {{end}}
     {{end}}
