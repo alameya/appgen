@@ -1,0 +1,149 @@
+package {{toLower .Name}}
+
+import (
+    "context"
+    "fmt"
+    
+    "github.com/jmoiron/sqlx"
+    sq "github.com/Masterminds/squirrel"
+
+    "app/internal/models"
+)
+
+type {{.Name}}Repository struct {
+    db *sqlx.DB
+}
+
+func New{{.Name}}Repository(db *sqlx.DB) *{{.Name}}Repository {
+    return &{{.Name}}Repository{
+        db: db,
+    }
+}
+
+func (r *{{.Name}}Repository) Create(ctx context.Context, item *models.{{.Name}}) (*models.{{.Name}}, error) {
+    query := sq.Insert("{{toLower .Name}}s").
+        Columns(
+            {{- $first := true -}}
+            {{- range $f := .Fields -}}
+            {{- if ne (toLower $f.Name) "id" -}}
+            {{if not $first}}, {{end}}"{{toLower .DbName}}"
+            {{- $first = false -}}
+            {{- end -}}
+            {{- end}},
+            "created_at",
+            "updated_at",
+        ).
+        Values(
+            {{- $first := true -}}
+            {{- range $f := .Fields -}}
+            {{- if ne (toLower $f.Name) "id" -}}
+            {{if not $first}}, {{end}}item.{{toCamel .Name}}
+            {{- $first = false -}}
+            {{- end -}}
+            {{- end}},
+            sq.Expr("CURRENT_TIMESTAMP"),
+            sq.Expr("CURRENT_TIMESTAMP"),
+        ).
+        Suffix("RETURNING *")
+
+    sql, args, err := query.ToSql()
+    if err != nil {
+        return nil, fmt.Errorf("failed to build query: %w", err)
+    }
+
+    var result models.{{.Name}}
+    if err := r.db.GetContext(ctx, &result, sql, args...); err != nil {
+        return nil, fmt.Errorf("failed to execute query: %w", err)
+    }
+
+    return &result, nil
+}
+
+func (r *{{.Name}}Repository) Get(ctx context.Context, id int64) (*models.{{.Name}}, error) {
+    query := sq.Select("*").
+        From("{{toLower .Name}}s").
+        Where(sq.Eq{"id": id})
+
+    sql, args, err := query.ToSql()
+    if err != nil {
+        return nil, fmt.Errorf("failed to build query: %w", err)
+    }
+
+    var result models.{{.Name}}
+    if err := r.db.GetContext(ctx, &result, sql, args...); err != nil {
+        return nil, fmt.Errorf("failed to execute query: %w", err)
+    }
+
+    return &result, nil
+}
+
+func (r *{{.Name}}Repository) List(ctx context.Context) ([]*models.{{.Name}}, error) {
+    query := sq.Select("*").
+        From("{{toLower .Name}}s")
+
+    sql, args, err := query.ToSql()
+    if err != nil {
+        return nil, fmt.Errorf("failed to build query: %w", err)
+    }
+
+    var results []*models.{{.Name}}
+    if err := r.db.SelectContext(ctx, &results, sql, args...); err != nil {
+        return nil, fmt.Errorf("failed to execute query: %w", err)
+    }
+
+    return results, nil
+}
+
+func (r *{{.Name}}Repository) Update(ctx context.Context, item *models.{{.Name}}) error {
+    query := sq.Update("{{toLower .Name}}s").
+        Set("updated_at", sq.Expr("CURRENT_TIMESTAMP")).
+        Where(sq.Eq{"id": item.Id}){{range .Fields}}{{if ne (toLower .Name) "id"}}
+    query = query.Set("{{toLower .DbName}}", item.{{toCamel .Name}}){{end}}{{end}}
+
+    sql, args, err := query.ToSql()
+    if err != nil {
+        return fmt.Errorf("failed to build query: %w", err)
+    }
+
+    result, err := r.db.ExecContext(ctx, sql, args...)
+    if err != nil {
+        return fmt.Errorf("failed to execute query: %w", err)
+    }
+
+    rows, err := result.RowsAffected()
+    if err != nil {
+        return fmt.Errorf("failed to get rows affected: %w", err)
+    }
+
+    if rows == 0 {
+        return fmt.Errorf("record not found")
+    }
+
+    return nil
+}
+
+func (r *{{.Name}}Repository) Delete(ctx context.Context, id int64) error {
+    query := sq.Delete("{{toLower .Name}}s").
+        Where(sq.Eq{"id": id})
+
+    sql, args, err := query.ToSql()
+    if err != nil {
+        return fmt.Errorf("failed to build query: %w", err)
+    }
+
+    result, err := r.db.ExecContext(ctx, sql, args...)
+    if err != nil {
+        return fmt.Errorf("failed to execute query: %w", err)
+    }
+
+    rows, err := result.RowsAffected()
+    if err != nil {
+        return fmt.Errorf("failed to get rows affected: %w", err)
+    }
+
+    if rows == 0 {
+        return fmt.Errorf("record not found")
+    }
+
+    return nil
+} 

@@ -1,0 +1,10 @@
+package models
+
+{{range .}}
+type {{.Name}} string
+
+const (
+    {{range $i, $v := .Values}}{{if $i}}
+    {{end}}{{$v}} {{$.Name}} = "{{$v}}"{{end}}
+)
+{{end}} 

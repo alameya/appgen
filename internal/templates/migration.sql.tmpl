@@ -1,0 +1,26 @@
+-- +goose Up
+-- +goose StatementBegin
+-- Create {{.Name}}s table
+CREATE TABLE IF NOT EXISTS {{toLower .Name}}s (
+    id BIGSERIAL PRIMARY KEY,
+    {{- range $i, $f := .Fields}}
+    {{- if ne (toLower $f.DbName) "id"}}
+    {{toLower $f.DbName}} {{if hasSuffix (toLower $f.Name) "_id"}}BIGINT{{else}}{{$f.SqlType}}{{end}}{{if not $f.Last}},{{end}}
+    {{- end}}
+    {{- end}},
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Create indexes for ID fields
+{{- range .Fields}}
+{{- if hasSuffix (toLower .Name) "_id"}}
+CREATE INDEX IF NOT EXISTS idx_{{toLower $.Name}}s_{{toLower .Name}} ON {{toLower $.Name}}s({{toLower .Name}});
+{{- end}}
+{{- end}}
+-- +goose StatementEnd
+
+-- +goose Down
+-- +goose StatementBegin
+DROP TABLE IF EXISTS {{toLower .Name}}s;
+-- +goose StatementEnd 

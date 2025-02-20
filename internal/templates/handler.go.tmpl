@@ -1,0 +1,135 @@
+package {{toLower .Name}}
+
+import (
+	"context"
+	"encoding/json"
+	"net/http"
+	"strconv"
+	
+	"github.com/gorilla/mux"
+
+	"app/internal/models"
+)
+
+type {{.Name}}Service interface {
+	Create(ctx context.Context, item *models.{{.Name}}) (*models.{{.Name}}, error)
+	Get(ctx context.Context, id int64) (*models.{{.Name}}, error)
+	List(ctx context.Context) ([]*models.{{.Name}}, error)
+	Update(ctx context.Context, item *models.{{.Name}}) error
+	Delete(ctx context.Context, id int64) error
+}
+
+type {{.Name}}Handler struct {
+	service {{.Name}}Service
+}
+
+func New{{.Name}}Handler(service {{.Name}}Service) *{{.Name}}Handler {
+	return &{{.Name}}Handler{
+		service: service,
+	}
+}
+
+func (h *{{.Name}}Handler) Register(r *mux.Router) {
+	r.HandleFunc("/{{toLower .Name}}", h.Create).Methods(http.MethodPost)
+	r.HandleFunc("/{{toLower .Name}}", h.List).Methods(http.MethodGet)
+	r.HandleFunc("/{{toLower .Name}}/{id}", h.Get).Methods(http.MethodGet)
+	r.HandleFunc("/{{toLower .Name}}/{id}", h.Update).Methods(http.MethodPut)
+	r.HandleFunc("/{{toLower .Name}}/{id}", h.Delete).Methods(http.MethodDelete)
+}
+
+func (h *{{.Name}}Handler) Create(w http.ResponseWriter, r *http.Request) {
+	var item models.{{.Name}}
+	if err := json.NewDecoder(r.Body).Decode(&item); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	result, err := h.service.Create(r.Context(), &item)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(result)
+}
+
+func (h *{{.Name}}Handler) Get(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	id, err := strconv.ParseInt(vars["id"], 10, 64)
+	if err != nil {
+		http.Error(w, "invalid id", http.StatusBadRequest)
+		return
+	}
+
+	result, err := h.service.Get(r.Context(), id)
+	if err != nil {
+		if err.Error() == "record not found" {
+			http.Error(w, "Not found", http.StatusNotFound)
+			return
+		}
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(result)
+}
+
+func (h *{{.Name}}Handler) List(w http.ResponseWriter, r *http.Request) {
+	results, err := h.service.List(r.Context())
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(results)
+}
+
+func (h *{{.Name}}Handler) Update(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	id, err := strconv.ParseInt(vars["id"], 10, 64)
+	if err != nil {
+		http.Error(w, "invalid id", http.StatusBadRequest)
+		return
+	}
+
+	var item models.{{.Name}}
+	if err := json.NewDecoder(r.Body).Decode(&item); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	item.Id = id
+
+	if err := h.service.Update(r.Context(), &item); err != nil {
+		if err.Error() == "record not found" {
+			http.Error(w, "Not found", http.StatusNotFound)
+			return
+		}
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+}
+
+func (h *{{.Name}}Handler) Delete(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	id, err := strconv.ParseInt(vars["id"], 10, 64)
+	if err != nil {
+		http.Error(w, "invalid id", http.StatusBadRequest)
+		return
+	}
+
+	if err := h.service.Delete(r.Context(), id); err != nil {
+		if err.Error() == "record not found" {
+			http.Error(w, "Not found", http.StatusNotFound)
+			return
+		}
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+} 

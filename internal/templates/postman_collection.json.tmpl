@@ -1,0 +1,99 @@
+{
+	"info": {
+		"_postman_id": "00000000-0000-0000-0000-000000000000",
+		"name": "API Collection",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{{range $i, $model := .}}
+		{{if $i}},{{end}}
+		{
+			"name": "{{.Name}}",
+			"item": [
+				{
+					"name": "Create {{.Name}}",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{`{{baseUrl}}`}}/{{toLower .Name}}",
+							"host": ["{{`{{baseUrl}}`}}"],
+							"path": ["{{toLower .Name}}"]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n{{range $i, $f := .Fields}}{{if ne (toLower $f.Name) "id"}}    \"{{toLower $f.JsonName}}\": {{if eq $f.Type "string"}}\"test_{{toLower $f.JsonName}}\"{{else if eq $f.Type "int64"}}100{{else if eq $f.Type "double"}}12.34{{else if eq $f.Type "bool"}}true{{else}}\"test_value\"{{end}}{{if not $f.Last}},{{end}}\n{{end}}{{end}}}"
+						}
+					}
+				},
+				{
+					"name": "Get {{.Name}}",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{`{{baseUrl}}`}}/{{toLower .Name}}/{{`{{`}}{{toLower .Name}}_id{{`}}`}}",
+							"host": ["{{`{{baseUrl}}`}}"],
+							"path": ["{{toLower .Name}}", "{{`{{`}}{{toLower .Name}}_id{{`}}`}}"]
+						}
+					}
+				},
+				{
+					"name": "List {{.Name}}s",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{`{{baseUrl}}`}}/{{toLower .Name}}",
+							"host": ["{{`{{baseUrl}}`}}"],
+							"path": ["{{toLower .Name}}"]
+						}
+					}
+				},
+				{
+					"name": "Update {{.Name}}",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{`{{baseUrl}}`}}/{{toLower .Name}}/{{`{{`}}{{toLower .Name}}_id{{`}}`}}",
+							"host": ["{{`{{baseUrl}}`}}"],
+							"path": ["{{toLower .Name}}", "{{`{{`}}{{toLower .Name}}_id{{`}}`}}"]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n{{range $i, $f := .Fields}}{{if ne (toLower $f.Name) "id"}}    \"{{toLower $f.JsonName}}\": {{if eq $f.Type "string"}}\"updated_{{toLower $f.JsonName}}\"{{else if eq $f.Type "int64"}}200{{else if eq $f.Type "double"}}56.78{{else if eq $f.Type "bool"}}false{{else}}\"updated_value\"{{end}}{{if not $f.Last}},{{end}}\n{{end}}{{end}}}"
+						}
+					}
+				},
+				{
+					"name": "Delete {{.Name}}",
+					"request": {
+						"method": "DELETE",
+						"url": {
+							"raw": "{{`{{baseUrl}}`}}/{{toLower .Name}}/{{`{{`}}{{toLower .Name}}_id{{`}}`}}",
+							"host": ["{{`{{baseUrl}}`}}"],
+							"path": ["{{toLower .Name}}", "{{`{{`}}{{toLower .Name}}_id{{`}}`}}"]
+						}
+					}
+				}
+			]
+		}
+		{{end}}
+	],
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:8080",
+			"type": "string"
+		}
+	]
+} 

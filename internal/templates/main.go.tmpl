@@ -1,0 +1,63 @@
+package main
+
+import (
+	"log"
+	"net/http"
+	"os"
+
+	"github.com/gorilla/mux"
+	"github.com/jmoiron/sqlx"
+	"github.com/joho/godotenv"
+	_ "github.com/lib/pq"
+
+	"app/internal/repository"
+	{{range .}}
+	{{toLower .Name}}Handler "app/internal/handler/{{toLower .Name}}"
+	{{toLower .Name}}Service "app/internal/service/{{toLower .Name}}"
+	{{end}}
+)
+
+func main() {
+	// Load .env file
+	if err := godotenv.Load(); err != nil {
+		log.Printf("Warning: .env file not found or error loading it: %v", err)
+	}
+
+	// Get database URL from environment
+	dbURL := os.Getenv("DATABASE_URL")
+	if dbURL == "" {
+		log.Fatal("DATABASE_URL environment variable is not set")
+	}
+
+	// Get port from environment or use default
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
+
+	// Connect to database
+	db, err := sqlx.Connect("postgres", dbURL)
+	if err != nil {
+		log.Fatalf("Failed to connect to database: %v", err)
+	}
+	defer db.Close()
+
+	// Create repository
+	repo := repository.NewRepository(db)
+
+	// Setup router
+	r := mux.NewRouter()
+
+	{{range .}}
+	// Create application layers for {{.Name}}
+	{{toLower .Name}}Svc := {{toLower .Name}}Service.New{{.Name}}Service(repo)
+	{{toLower .Name}}H := {{toLower .Name}}Handler.New{{.Name}}Handler({{toLower .Name}}Svc)
+	{{toLower .Name}}H.Register(r)
+	{{end}}
+
+	// Start server
+	log.Printf("Server starting on :%s", port)
+	if err := http.ListenAndServe(":"+port, r); err != nil {
+		log.Fatalf("Failed to start server: %v", err)
+	}
+} 

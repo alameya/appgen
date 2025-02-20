@@ -1,0 +1,26 @@
+syntax = "proto3";
+
+package courier;
+
+option go_package = "generator/proto";
+
+message Courier {
+    int64 id = 1;
+    string name = 2;
+    string phone = 3;
+    string email = 4;
+    string status = 5;
+}
+
+message Location {
+    int64 id = 1;
+    double latitude = 2;
+    double longitude = 3;
+    string address = 4;
+    string name = 5;
+    string phone = 6;
+    string email = 7;
+    string status = 8;
+}
+
+

@@ -1,0 +1,46 @@
+package {{toLower .Name}}
+
+import (
+	"context"
+
+	"app/internal/models"
+	"app/internal/repository"
+)
+
+type {{.Name}}Repository interface {
+	Create(ctx context.Context, item *models.{{.Name}}) (*models.{{.Name}}, error)
+	Get(ctx context.Context, id int64) (*models.{{.Name}}, error)
+	List(ctx context.Context) ([]*models.{{.Name}}, error)
+	Update(ctx context.Context, item *models.{{.Name}}) error
+	Delete(ctx context.Context, id int64) error
+}
+
+type {{.Name}}Service struct {
+	repo *repository.Repository
+}
+
+func New{{.Name}}Service(repo *repository.Repository) *{{.Name}}Service {
+	return &{{.Name}}Service{
+		repo: repo,
+	}
+}
+
+func (s *{{.Name}}Service) Create(ctx context.Context, item *models.{{.Name}}) (*models.{{.Name}}, error) {
+	return s.repo.{{.Name}}.Create(ctx, item)
+}
+
+func (s *{{.Name}}Service) Get(ctx context.Context, id int64) (*models.{{.Name}}, error) {
+	return s.repo.{{.Name}}.Get(ctx, id)
+}
+
+func (s *{{.Name}}Service) List(ctx context.Context) ([]*models.{{.Name}}, error) {
+	return s.repo.{{.Name}}.List(ctx)
+}
+
+func (s *{{.Name}}Service) Update(ctx context.Context, item *models.{{.Name}}) error {
+	return s.repo.{{.Name}}.Update(ctx, item)
+}
+
+func (s *{{.Name}}Service) Delete(ctx context.Context, id int64) error {
+	return s.repo.{{.Name}}.Delete(ctx, id)
+} 

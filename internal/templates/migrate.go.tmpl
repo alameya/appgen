@@ -1,0 +1,85 @@
+package main
+
+import (
+	"database/sql"
+	"log"
+	"os"
+	"path/filepath"
+	"sort"
+
+	"github.com/joho/godotenv"
+	_ "github.com/lib/pq"
+)
+
+func main() {
+	// Load .env file
+	if err := godotenv.Load(); err != nil {
+		log.Printf("Warning: .env file not found or error loading it: %v", err)
+	}
+
+	// Get database URL from environment
+	dbURL := os.Getenv("DATABASE_URL")
+	if dbURL == "" {
+		log.Fatal("DATABASE_URL environment variable is not set")
+	}
+
+	// Get migrations dir from environment or use default
+	migrationsDir := os.Getenv("MIGRATIONS_DIR")
+	if migrationsDir == "" {
+		migrationsDir = "./migrations"
+	}
+
+	// Open database connection
+	db, err := sql.Open("postgres", dbURL)
+	if err != nil {
+		log.Fatalf("Failed to open database: %v", err)
+	}
+	defer db.Close()
+
+	// Check connection
+	if err := db.Ping(); err != nil {
+		log.Fatalf("Failed to ping database: %v", err)
+	}
+
+	// Read migrations directory
+	files, err := os.ReadDir(migrationsDir)
+	if err != nil {
+		log.Fatalf("Failed to read migrations directory: %v", err)
+	}
+
+	// Get all .sql files and sort them
+	var migrations []string
+	for _, file := range files {
+		if filepath.Ext(file.Name()) == ".sql" {
+			migrations = append(migrations, file.Name())
+		}
+	}
+	sort.Strings(migrations)
+
+	// Start transaction
+	tx, err := db.Begin()
+	if err != nil {
+		log.Fatalf("Failed to start transaction: %v", err)
+	}
+	defer tx.Rollback()
+
+	// Execute migrations in order
+	for _, filename := range migrations {
+		content, err := os.ReadFile(filepath.Join(migrationsDir, filename))
+		if err != nil {
+			log.Fatalf("Failed to read migration file %s: %v", filename, err)
+		}
+
+		log.Printf("Executing migration: %s", filename)
+		if _, err := tx.Exec(string(content)); err != nil {
+			log.Fatalf("Failed to execute migration %s: %v", filename, err)
+		}
+	}
+
+	// Commit transaction
+	if err := tx.Commit(); err != nil {
+		log.Fatalf("Failed to commit transaction: %v", err)
+	}
+
+	log.Println("Migrations completed successfully")
+} 
