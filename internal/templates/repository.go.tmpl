@@ -1,0 +1,33 @@
+package repository
+
+import (
+	"github.com/jmoiron/sqlx"
+	sq "github.com/Masterminds/squirrel"
+
+	{{$first := true}}
+	{{range .}}
+	{{if not $first}},{{end}}
+	{{toLower .Name}}Repository "app/internal/repository/{{toLower .Name}}"
+	{{$first = false}}
+	{{end}}
+)
+
+type Repository struct {
+	db *sqlx.DB
+
+	{{range .}}
+	{{.Name}} *{{toLower .Name}}Repository.{{.Name}}Repository
+	{{end}}
+}
+
+func NewRepository(db *sqlx.DB) *Repository {
+	// Initialize squirrel with dollar placeholder
+	sq.StatementBuilder = sq.StatementBuilder.PlaceholderFormat(sq.Dollar)
+
+	return &Repository{
+		db: db,
+		{{range .}}
+		{{.Name}}: {{toLower .Name}}Repository.New{{.Name}}Repository(db),
+		{{end}}
+	}
+} 
