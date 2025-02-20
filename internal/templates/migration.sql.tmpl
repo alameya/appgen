@@ -3,9 +3,16 @@
 -- Create {{.Name}}s table
 CREATE TABLE IF NOT EXISTS {{toLower(.Name)}}s (
     id BIGSERIAL PRIMARY KEY,
+    {{- tableName := .Name}}
     {{- range .Fields}}
-    {{- if (.Name != "Id" && .Name != "id")}}
-    {{toLower(.DbName)}} {{.SqlType}},
+    {{- field := .}}
+    {{- if field.Name != "Id"}}
+    {{toLower(field.DbName)}} {{field.SqlType}}
+        {{- if hasSuffix(toLower(field.Name), "id")}}
+            {{- if existsTable(trimSuffix(field.Name, "Id"))}}
+                REFERENCES {{toLower(trimSuffix(field.Name, "Id"))}}s(id) ON DELETE CASCADE
+            {{- end}}
+        {{- end}},
     {{- end}}
     {{- end}}
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
@@ -14,8 +21,9 @@ CREATE TABLE IF NOT EXISTS {{toLower(.Name)}}s (
 
 -- Create indexes for ID fields
 {{- range .Fields}}
-{{- if hasSuffix(toLower(.Name), "_id")}}
-CREATE INDEX IF NOT EXISTS idx_{{toLower(.Name)}}s_{{toLower(.Name)}} ON {{toLower(.Name)}}s({{toLower(.Name)}});
+{{- field := .}}
+{{- if hasSuffix(toLower(field.Name), "_id")}}
+-- CREATE INDEX IF NOT EXISTS idx_{{toLower(tableName)}}s_{{toLower(field.Name)}} ON {{toLower(tableName)}}s({{toLower(field.Name)}});
 {{- end}}
 {{- end}}
 -- +goose StatementEnd

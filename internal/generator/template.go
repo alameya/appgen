@@ -40,18 +40,18 @@ func NewTemplateGenerator() *TemplateGenerator {
 	views.AddGlobal("toLower", strings.ToLower)
 	views.AddGlobal("toUpper", strings.ToUpper)
 	views.AddGlobal("toCamel", toCamelCase)
-	views.AddGlobal("eq", func(a, b interface{}) bool {
-		return a == b
-	})
-	views.AddGlobal("ne", func(a, b interface{}) bool {
-		return a != b
-	})
 
 	views.AddGlobalFunc("toLowerCamel", func(args jet.Arguments) reflect.Value {
 		return reflect.ValueOf(strcase.ToLowerCamel(args.Get(0).String()))
 	})
 	views.AddGlobalFunc("hasSuffix", func(args jet.Arguments) reflect.Value {
 		return reflect.ValueOf(strings.HasSuffix(args.Get(0).String(), args.Get(1).String()))
+	})
+
+	views.AddGlobal("hasSuffix", strings.HasSuffix)
+	views.AddGlobal("trimSuffix", strings.TrimSuffix)
+	views.AddGlobal("existsTable", func(name string) bool {
+		return name != "" && name != "." && name != ".."
 	})
 
 	return &TemplateGenerator{

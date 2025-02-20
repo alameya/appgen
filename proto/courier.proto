@@ -50,6 +50,7 @@ message Courier {
   string phone = 3;
   string email = 4;
   string status = 5;
+  int64 location_id = 6;
 }
 
 // Create request
