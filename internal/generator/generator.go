@@ -55,7 +55,10 @@ func (g *Generator) getGoType(field *descriptorpb.FieldDescriptorProto) string {
 
 func (g *Generator) parseField(field *descriptorpb.FieldDescriptorProto) Field {
 	name := field.GetName()
+	fmt.Printf("Parsing field: %s, type: %s\n", name, field.GetType())
+
 	goType := g.getGoType(field)
+	fmt.Printf("Got Go type: %s\n", goType)
 
 	var sqlType string
 	switch field.GetType() {
@@ -70,6 +73,8 @@ func (g *Generator) parseField(field *descriptorpb.FieldDescriptorProto) Field {
 	default:
 		sqlType = "TEXT"
 	}
+
+	fmt.Printf("SQL type: %s\n", sqlType)
 
 	return Field{
 		Name:     strcase.ToCamel(name),
