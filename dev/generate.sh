@@ -68,12 +68,6 @@ if ! command -v protoc-gen-openapiv2 &> /dev/null; then
 fi
 
 # Generate code
-if [ "$NEED_GENERATE" == "1" ]; then
-    echo "Generating code..."
-   # Generate code from proto files
-    
-fi
-
 protoc \
         --proto_path=. \
         --proto_path=/usr/local/include \
@@ -85,7 +79,7 @@ protoc \
         --grpc-gateway_opt=generate_unbound_methods=true \
         --openapiv2_out=out/api \
         proto/*.proto
-        
+
 go run cmd/generator/main.go -proto="proto/*.proto" -output=out
 
 # Move generated proto files to correct location
