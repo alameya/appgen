@@ -14,7 +14,7 @@ import (
 
 	"app/internal/repository"
 	{{range .}}
-	{{toLower .Name}}Proto "internal/proto/{{toLower .Name}}"
+	{{toLower .Name}}Proto "app/internal/proto/{{toLower .Name}}"
 	{{toLower .Name}}Handler "app/internal/handler/{{toLower .Name}}"
 	{{toLower .Name}}Service "app/internal/service/{{toLower .Name}}"
 	{{end}}

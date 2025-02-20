@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package courier;
 
-option go_package = "internal/proto/courier";
+option go_package = "app/internal/proto/courier";
 
 service CourierService {
     rpc Create(CreateCourierRequest) returns (Courier) {}
