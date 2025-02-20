@@ -2,7 +2,6 @@ package main
 
 import (
 	"log"
-	"net"
 	"net/http"
 	"os"
 
@@ -10,13 +9,9 @@ import (
 	"github.com/jmoiron/sqlx"
 	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
-	"google.golang.org/grpc"
 
 	"app/internal/repository"
-	"app/internal/proto"
-	{{$first := true}}
 	{{range .}}
-	{{if $first}}{{$first = false}}{{else}},{{end}}
 	{{toLower .Name}}Handler "app/internal/handler/{{toLower .Name}}"
 	{{toLower .Name}}Service "app/internal/service/{{toLower .Name}}"
 	{{end}}
@@ -59,22 +54,6 @@ func main() {
 	{{toLower .Name}}H := {{toLower .Name}}Handler.New{{.Name}}Handler({{toLower .Name}}Svc)
 	{{toLower .Name}}H.Register(r)
 	{{end}}
-
-	// Start gRPC server
-	lis, err := net.Listen("tcp", ":50051")
-	if err != nil {
-		log.Fatalf("Failed to listen: %v", err)
-	}
-	s := grpc.NewServer()
-	{{range .}}
-	proto.Register{{.Name}}ServiceServer(s, &grpc.Server{})
-	{{end}}
-	go func() {
-		log.Printf("gRPC server listening at %v", lis.Addr())
-		if err := s.Serve(lis); err != nil {
-			log.Fatalf("Failed to serve: %v", err)
-		}
-	}()
 
 	// Start HTTP server
 	log.Printf("Server starting on :%s", port)

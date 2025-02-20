@@ -10,17 +10,6 @@ rm -rf out/
 # Create required directories
 echo "Creating directories..."
 mkdir -p out/api
-mkdir -p out/internal/proto
-
-# Generate proto files first
-echo "Generating proto files..."
-cd proto
-protoc --go_out=../out/internal/proto \
-    --go_opt=paths=source_relative \
-    --go-grpc_out=../out/internal/proto \
-    --go-grpc_opt=paths=source_relative \
-    *.proto
-cd ..
 
 # Generate code
 echo "Generating code..."
