@@ -21,25 +21,31 @@ func New{{.Name}}Repository(db *sqlx.DB) *{{.Name}}Repository {
 }
 
 func (r *{{.Name}}Repository) Create(ctx context.Context, item *models.{{.Name}}) (*models.{{.Name}}, error) {
+    // Формируем список колонок и значений, исключая Id
+    columns := []string{
+        {{range .Fields}}
+        {{if .Name != "Id"}}
+        "{{toLower(.DbName)}}",
+        {{end}}
+        {{end}}
+        "created_at",
+        "updated_at",
+    }
+
+    values := []interface{}{
+        {{range .Fields}}
+        {{if .Name != "Id"}}
+        item.{{toCamel(.Name)}},
+        {{end}}
+        {{end}}
+        sq.Expr("CURRENT_TIMESTAMP"),
+        sq.Expr("CURRENT_TIMESTAMP"),
+    }
+
+    // Строим INSERT запрос
     query := sq.Insert("{{toLower(.Name)}}s").
-        Columns(
-            {{range .Fields}}
-            {{if .Name != "Id"}}
-            "{{toLower(.DbName)}}",
-            {{end}}
-            {{end}}
-            "created_at",
-            "updated_at",
-        ).
-        Values(
-            {{range .Fields}}
-            {{if .Name != "Id"}}
-            item.{{toCamel(.Name)}},
-            {{end}}
-            {{end}}
-            sq.Expr("CURRENT_TIMESTAMP"),
-            sq.Expr("CURRENT_TIMESTAMP"),
-        ).
+        Columns(columns...).
+        Values(values...).
         Suffix("RETURNING *")
 
     sql, args, err := query.ToSql()
