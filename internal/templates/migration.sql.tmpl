@@ -5,8 +5,7 @@ CREATE TABLE IF NOT EXISTS {{toLower(.Name)}}s (
     id BIGSERIAL PRIMARY KEY,
     {{- range .Fields}}
     {{- if .Name != "id" }}
-    {{toLower(.DbName)}} {{.SqlType}}
-        ,
+    {{toLower(.DbName)}} {{.SqlType}},
     {{- end}}
     {{- end}}
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
