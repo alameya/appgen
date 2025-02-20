@@ -1,0 +1,8 @@
+syntax = "proto3";
+
+package proto;
+
+option go_package = "app/internal/proto";
+
+// Empty response message used for operations that don't return data
+message Empty {} 

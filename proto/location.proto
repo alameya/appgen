@@ -1,8 +1,9 @@
 syntax = "proto3";
 
-package location;
+package proto;
 
 import "google/api/annotations.proto";
+import "proto/common.proto";
 
 option go_package = "app/internal/proto";
 
@@ -46,8 +47,6 @@ service LocationService {
   }
 }
 
-// Empty response
-message Empty {}
 
 // Location message
 message Location {

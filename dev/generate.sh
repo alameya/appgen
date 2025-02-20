@@ -24,7 +24,7 @@ go install github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-openapiv2@latest
 
 # Generate code from proto files
 protoc \
-    --proto_path=proto \
+    --proto_path=. \
     --proto_path=/usr/local/include \
     --go_out=paths=source_relative:out/internal/proto \
     --go-grpc_out=paths=source_relative:out/internal/proto \

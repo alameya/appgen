@@ -1,8 +1,9 @@
 syntax = "proto3";
 
-package courier;
+package proto;
 
 import "google/api/annotations.proto";
+import "proto/common.proto";
 
 option go_package = "app/internal/proto";
 
@@ -45,9 +46,6 @@ service CourierService {
     };
   }
 }
-
-// Empty response
-message Empty {}
 
 // Courier message
 message Courier {
