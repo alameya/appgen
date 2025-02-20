@@ -2,7 +2,7 @@ package generator
 
 type Model struct {
 	Name   string
-	Fields []Field
+	Fields []*Field
 }
 
 type Field struct {

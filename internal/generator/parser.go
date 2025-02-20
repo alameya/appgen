@@ -6,6 +6,7 @@ import (
 	"os/exec"
 	"strings"
 
+	"github.com/iancoleman/strcase"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protodesc"
 	"google.golang.org/protobuf/reflect/protoreflect"
@@ -67,20 +68,13 @@ func (p *Parser) Parse(protoPath string) ([]*Model, error) {
 
 		model := &Model{
 			Name:   name,
-			Fields: make([]Field, 0, message.Fields().Len()),
+			Fields: make([]*Field, 0, message.Fields().Len()),
 		}
 
 		fields := message.Fields()
 		for j := 0; j < fields.Len(); j++ {
 			field := fields.Get(j)
-			f := Field{
-				Name:     string(field.Name()),
-				Type:     getGoType(field),
-				JsonName: field.JSONName(),
-				DbName:   string(field.Name()),
-				SqlType:  getSqlType(field.Kind().String()),
-				Last:     j == fields.Len()-1,
-			}
+			f := p.parseFieldFromDescriptor(field)
 			model.Fields = append(model.Fields, f)
 		}
 
@@ -88,6 +82,48 @@ func (p *Parser) Parse(protoPath string) ([]*Model, error) {
 	}
 
 	return models, nil
+}
+
+func (p *Parser) parseFieldFromDescriptor(field protoreflect.FieldDescriptor) *Field {
+	name := string(field.Name())
+	dbName := strcase.ToSnake(name)
+	sqlType := p.getSqlTypeFromKind(field.Kind(), name)
+
+	return &Field{
+		Name:     name,
+		DbName:   dbName,
+		SqlType:  sqlType,
+		Type:     getGoType(field),
+		JsonName: field.JSONName(),
+		Last:     false, // будет установлено позже если нужно
+	}
+}
+
+func (p *Parser) getSqlTypeFromKind(kind protoreflect.Kind, fieldName string) string {
+	switch kind {
+	case protoreflect.Int32Kind:
+		return "INTEGER"
+	case protoreflect.Int64Kind:
+		if strings.HasSuffix(fieldName, "_id") {
+			return "BIGINT"
+		}
+		return "BIGINT"
+	case protoreflect.BoolKind:
+		return "BOOLEAN"
+	case protoreflect.StringKind:
+		if strings.HasSuffix(fieldName, "_id") {
+			return "BIGINT"
+		}
+		return "TEXT"
+	case protoreflect.BytesKind:
+		return "BYTEA"
+	case protoreflect.FloatKind:
+		return "REAL"
+	case protoreflect.DoubleKind:
+		return "DOUBLE PRECISION"
+	default:
+		return "TEXT"
+	}
 }
 
 func getGoType(field protoreflect.FieldDescriptor) string {
@@ -114,19 +150,4 @@ func getValidations(field protoreflect.FieldDescriptor) []string {
 	// Example: required, min_length, max_length, etc.
 
 	return validations
-}
-
-func getSqlType(protoType string) string {
-	switch protoType {
-	case "INT64":
-		return "BIGINT"
-	case "STRING":
-		return "TEXT"
-	case "BOOL":
-		return "BOOLEAN"
-	case "DOUBLE":
-		return "DOUBLE PRECISION"
-	default:
-		return "TEXT"
-	}
 }
