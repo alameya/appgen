@@ -17,10 +17,10 @@ mkdir -p out/migrations
 # Generate proto files
 echo "Generating proto files..."
 # Install required protoc plugins
-go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
-go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
-go install github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-grpc-gateway@latest
-go install github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-openapiv2@latest
+go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.32.0
+go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.3.0
+go install github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-grpc-gateway@v2.19.1
+go install github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-openapiv2@v2.19.1
 
 # Generate code from proto files
 protoc \
@@ -29,6 +29,9 @@ protoc \
     --go_out=out \
     --go-grpc_out=out \
     --grpc-gateway_out=out \
+    --grpc-gateway_opt=logtostderr=true \
+    --grpc-gateway_opt=allow_delete_body=true \
+    --grpc-gateway_opt=generate_unbound_methods=true \
     --openapiv2_out=out/api \
     proto/*.proto
 
