@@ -3,6 +3,7 @@ package {{toLower .Name}}
 import (
     "context"
     "fmt"
+    "strconv"
 
     "app/internal/proto"
     "app/internal/repository"
@@ -21,7 +22,8 @@ func NewServer(repo *repository.Repository) *Server {
 func (s *Server) Create(ctx context.Context, req *proto.Create{{.Name}}Request) (*proto.{{.Name}}, error) {
     item := &models.{{.Name}}{
         {{range .Fields}}
-        {{if ne .Name "Id"}}{{toCamel .Name}}: req.{{toCamel .Name}},{{end}}
+        {{if and (ne .Name "Id") (eq .Type "float64")}}{{toCamel .Name}}: fmt.Sprintf("%f", req.{{toCamel .Name}}),
+        {{else if ne .Name "Id"}}{{toCamel .Name}}: req.{{toCamel .Name}},{{end}}
         {{end}}
     }
 
@@ -57,9 +59,15 @@ func (s *Server) List(ctx context.Context, req *proto.List{{.Name}}Request) (*pr
 }
 
 func convert{{.Name}}ToProto(item *models.{{.Name}}) *proto.{{.Name}} {
+    {{range .Fields}}
+    {{if eq .Type "float64"}}
+    {{toLower .Name}}Val, _ := strconv.ParseFloat(item.{{toCamel .Name}}, 64)
+    {{end}}
+    {{end}}
     return &proto.{{.Name}}{
         {{range .Fields}}
-        {{toCamel .Name}}: item.{{toCamel .Name}},
+        {{if eq .Type "float64"}}{{toCamel .Name}}: {{toLower .Name}}Val,
+        {{else}}{{toCamel .Name}}: item.{{toCamel .Name}},{{end}}
         {{end}}
     }
 } 
