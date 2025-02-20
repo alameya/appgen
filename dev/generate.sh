@@ -26,11 +26,16 @@ go install github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-openapiv2@latest
 protoc \
     --proto_path=. \
     --proto_path=/usr/local/include \
-    --go_out=module=app/internal/proto:out \
-    --go-grpc_out=module=app/internal/proto:out \
-    --grpc-gateway_out=module=app/internal/proto:out \
+    --go_out=out \
+    --go-grpc_out=out \
+    --grpc-gateway_out=out \
     --openapiv2_out=out/api \
     proto/*.proto
+
+# Move generated proto files to correct location
+mkdir -p out/internal/proto
+mv out/app/internal/proto/* out/internal/proto/
+rm -rf out/app
 
 # Generate code
 echo "Generating code..."
