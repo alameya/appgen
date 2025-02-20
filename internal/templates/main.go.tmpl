@@ -11,13 +11,9 @@ import (
 	_ "github.com/lib/pq"
 
 	"app/internal/repository"
-	{{$first := true}}
 	{{range .}}
-	{{if not $first}},{{end}}
 	{{toLower .Name}}Handler "app/internal/handler/{{toLower .Name}}"
-	{{toLower .Name}}Service "app/internal/service/{{toLower .Name}}"
-	{{$first = false}}
-	{{end}}
+	{{toLower .Name}}Service "app/internal/service/{{toLower .Name}}"{{end}}
 )
 
 func main() {
