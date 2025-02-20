@@ -15,10 +15,10 @@ mkdir -p out/internal/proto
 # Generate proto files first
 echo "Generating proto files..."
 cd proto
-protoc --go_out=../out \
-    --go_opt=module=app \
-    --go-grpc_out=../out \
-    --go-grpc_opt=module=app \
+protoc --go_out=../out/internal/proto \
+    --go_opt=paths=source_relative \
+    --go-grpc_out=../out/internal/proto \
+    --go-grpc_opt=paths=source_relative \
     *.proto
 cd ..
 
