@@ -59,6 +59,7 @@ message CreateCourierRequest {
   string phone = 2;
   string email = 3;
   string status = 4;
+  int64 location_id = 5;
 }
 
 // Get request
@@ -81,6 +82,7 @@ message UpdateCourierRequest {
   string phone = 3;
   string email = 4;
   string status = 5;
+  int64 location_id = 6;
 }
 
 // Delete request
