@@ -1,22 +1,22 @@
 package main
 
 import (
+	"context"
 	"log"
 	"net"
 	"net/http"
 	"os"
 
-	"github.com/gorilla/mux"
 	"github.com/jmoiron/sqlx"
 	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
+	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 
 	"app/internal/repository"
 	"app/internal/proto"
 	{{range .}}
-	{{toLower(.Name)}}Handler "app/internal/handler/{{toLower(.Name)}}"
 	{{toLower(.Name)}}Service "app/internal/service/{{toLower(.Name)}}"
 	{{toLower(.Name)}}Grpc "app/internal/grpc/{{toLower(.Name)}}"
 	{{end}}
@@ -50,15 +50,9 @@ func main() {
 	// Create repository
 	repo := repository.NewRepository(db)
 
-	// Setup router
-	r := mux.NewRouter()
-
-	{{range .}}
-	// Create application layers for {{.Name}} model
-	{{toLower(.Name)}}Svc := {{toLower(.Name)}}Service.New{{.Name}}Service(repo)
-	{{toLower(.Name)}}H := {{toLower(.Name)}}Handler.New{{.Name}}Handler({{toLower(.Name)}}Svc)
-	{{toLower(.Name)}}H.Register(r)
-	{{end}}
+	// Create context with cancellation
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
 	// Start gRPC server
 	lis, err := net.Listen("tcp", ":50051")
@@ -79,9 +73,20 @@ func main() {
 		}
 	}()
 
+	// Create gRPC-Gateway mux
+	gwmux := runtime.NewServeMux()
+	opts := []grpc.DialOption{grpc.WithInsecure()}
+
+	{{range .}}
+	// Register gRPC-Gateway handlers
+	if err := proto.Register{{.Name}}ServiceHandlerFromEndpoint(ctx, gwmux, "localhost:50051", opts); err != nil {
+		log.Fatalf("Failed to register gateway: %v", err)
+	}
+	{{end}}
+
 	// Start HTTP server
 	log.Printf("Server starting on :%s", port)
-	if err := http.ListenAndServe(":"+port, r); err != nil {
+	if err := http.ListenAndServe(":"+port, gwmux); err != nil {
 		log.Fatalf("Failed to start server: %v", err)
 	}
 } 

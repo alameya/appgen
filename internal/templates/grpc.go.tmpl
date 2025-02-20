@@ -58,6 +58,31 @@ func (s *Server) List(ctx context.Context, req *proto.List{{.Name}}Request) (*pr
     return &proto.List{{.Name}}Response{Items: items}, nil
 }
 
+func (s *Server) Update(ctx context.Context, req *proto.Update{{.Name}}Request) (*proto.{{.Name}}, error) {
+    item := &models.{{.Name}}{
+        Id: req.Id,
+        {{range .Fields}}
+        {{if (.Name != "Id" && .Name != "id")}}
+        {{toCamel(.Name)}}: req.{{toCamel(.Name)}},
+        {{end}}
+        {{end}}
+    }
+
+    if err := s.repo.{{.Name}}.Update(ctx, item); err != nil {
+        return nil, fmt.Errorf("failed to update {{toLower(.Name)}}: %w", err)
+    }
+
+    return convert{{.Name}}ToProto(item), nil
+}
+
+func (s *Server) Delete(ctx context.Context, req *proto.Delete{{.Name}}Request) (*proto.Empty, error) {
+    if err := s.repo.{{.Name}}.Delete(ctx, req.Id); err != nil {
+        return nil, fmt.Errorf("failed to delete {{toLower(.Name)}}: %w", err)
+    }
+
+    return &proto.Empty{}, nil
+}
+
 func convert{{.Name}}ToProto(item *models.{{.Name}}) *proto.{{.Name}} {
     return &proto.{{.Name}}{
         Id: item.Id,

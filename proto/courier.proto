@@ -1,38 +1,96 @@
 syntax = "proto3";
 
-package proto;
+package courier;
 
-option go_package = "app/internal/proto;proto";
+import "google/api/annotations.proto";
 
+option go_package = "app/internal/proto";
+
+// Courier service definition
 service CourierService {
-    rpc Create(CreateCourierRequest) returns (Courier) {}
-    rpc Get(GetCourierRequest) returns (Courier) {}
-    rpc List(ListCourierRequest) returns (ListCourierResponse) {}
+  // Create a new courier
+  rpc Create(CreateCourierRequest) returns (Courier) {
+    option (google.api.http) = {
+      post: "/api/v1/couriers"
+      body: "*"
+    };
+  }
+
+  // Get courier by ID
+  rpc Get(GetCourierRequest) returns (Courier) {
+    option (google.api.http) = {
+      get: "/api/v1/couriers/{id}"
+    };
+  }
+
+  // List all couriers
+  rpc List(ListCourierRequest) returns (ListCourierResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/couriers"
+    };
+  }
+
+  // Update courier
+  rpc Update(UpdateCourierRequest) returns (Courier) {
+    option (google.api.http) = {
+      put: "/api/v1/couriers/{id}"
+      body: "*"
+    };
+  }
+
+  // Delete courier
+  rpc Delete(DeleteCourierRequest) returns (Empty) {
+    option (google.api.http) = {
+      delete: "/api/v1/couriers/{id}"
+    };
+  }
 }
 
+// Empty response
+message Empty {}
+
+// Courier message
+message Courier {
+  int64 id = 1;
+  string name = 2;
+  string phone = 3;
+  string email = 4;
+  string status = 5;
+}
+
+// Create request
 message CreateCourierRequest {
-    string name = 1;
-    string phone = 2;
-    string email = 3;
-    string status = 4;
+  string name = 1;
+  string phone = 2;
+  string email = 3;
+  string status = 4;
 }
 
+// Get request
 message GetCourierRequest {
-    int64 id = 1;
+  int64 id = 1;
 }
 
+// List request
 message ListCourierRequest {}
 
+// List response
 message ListCourierResponse {
-    repeated Courier items = 1;
+  repeated Courier items = 1;
 }
 
-message Courier {
-    int64 id = 1;
-    string name = 2;
-    string phone = 3;
-    string email = 4;
-    string status = 5;
+// Update request
+message UpdateCourierRequest {
+  int64 id = 1;
+  string name = 2;
+  string phone = 3;
+  string email = 4;
+  string status = 5;
+}
+
+// Delete request
+message DeleteCourierRequest {
+  int64 id = 1;
 }
 
 

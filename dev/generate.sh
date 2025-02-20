@@ -16,10 +16,20 @@ mkdir -p out/migrations
 
 # Generate proto files
 echo "Generating proto files..."
-protoc --go_out=out/internal/proto \
-    --go_opt=module=app/internal/proto \
-    --go-grpc_out=out/internal/proto \
-    --go-grpc_opt=module=app/internal/proto \
+# Install required protoc plugins
+go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
+go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
+go install github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-grpc-gateway@latest
+go install github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-openapiv2@latest
+
+# Generate code from proto files
+protoc \
+    --proto_path=proto \
+    --proto_path=/usr/local/include \
+    --go_out=paths=source_relative:out/internal/proto \
+    --go-grpc_out=paths=source_relative:out/internal/proto \
+    --grpc-gateway_out=paths=source_relative:out/internal/proto \
+    --openapiv2_out=out/api \
     proto/*.proto
 
 # Generate code
