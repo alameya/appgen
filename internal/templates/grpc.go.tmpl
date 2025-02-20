@@ -75,12 +75,12 @@ func (s *Server) Update(ctx context.Context, req *proto.Update{{.Name}}Request) 
     return convert{{.Name}}ToProto(item), nil
 }
 
-func (s *Server) Delete(ctx context.Context, req *proto.Delete{{.Name}}Request) (*proto.Empty, error) {
+func (s *Server) Delete(ctx context.Context, req *proto.Delete{{.Name}}Request) (*proto.EmptyResponse, error) {
     if err := s.repo.{{.Name}}.Delete(ctx, req.Id); err != nil {
         return nil, fmt.Errorf("failed to delete {{toLower(.Name)}}: %w", err)
     }
 
-    return &proto.Empty{}, nil
+    return &proto.EmptyResponse{}, nil
 }
 
 func convert{{.Name}}ToProto(item *models.{{.Name}}) *proto.{{.Name}} {
