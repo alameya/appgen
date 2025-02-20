@@ -29,6 +29,7 @@ func NewTemplateGenerator() *TemplateGenerator {
 		log.Fatal(err)
 	}
 	templatesPath := filepath.Join(dir, "internal", "templates")
+	log.Printf("Templates path: %s", templatesPath)
 
 	views := jet.NewSet(
 		jet.NewOSFileSystemLoader(templatesPath),

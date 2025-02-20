@@ -1,0 +1,198 @@
+package integration
+
+import (
+    "context"
+    "testing"
+    "time"
+
+    "github.com/stretchr/testify/suite"
+    "google.golang.org/grpc"
+    "google.golang.org/grpc/codes"
+    "google.golang.org/grpc/status"
+    "github.com/stretchr/testify/require"
+
+    "app/internal/proto"
+)
+
+type GRPCTestSuite struct {
+    suite.Suite
+    ctx        context.Context
+    cancel     context.CancelFunc
+    conn       *grpc.ClientConn
+    @for _, model in .@
+    @toLower(model.Name)@ proto.@model.Name@ServiceClient
+    @end@
+}
+
+func (s *GRPCTestSuite) SetupSuite() {
+    var err error
+    s.ctx, s.cancel = context.WithTimeout(context.Background(), 30*time.Second)
+    
+    s.conn, err = grpc.Dial("localhost:50051", grpc.WithInsecure())
+    s.Require().NoError(err)
+
+    @for _, model in .@
+    s.@toLower(model.Name)@ = proto.New@model.Name@ServiceClient(s.conn)
+    @end@
+}
+
+func (s *GRPCTestSuite) TearDownSuite() {
+    s.cancel()
+    if s.conn != nil {
+        s.conn.Close()
+    }
+}
+
+@for _, model in .@
+func (s *GRPCTestSuite) Test@model.Name@CRUD() {
+    tests := []struct {
+        name        string
+        setup       func() (*proto.@model.Name@, error)
+        run         func(*proto.@model.Name@) error
+        validate    func(*proto.@model.Name@, error)
+        wantErr     bool
+        wantErrCode codes.Code
+    }{
+        {
+            name: "Create_Success",
+            run: func(_ *proto.@model.Name@) error {
+                _, err := s.@toLower(model.Name)@.Create(s.ctx, &proto.Create@model.Name@Request{
+                    @for _, field in model.Fields@
+                    @if field.Name != "Id"@
+                    @field.Name@: "test@field.Name@",
+                    @end@
+                    @end@
+                })
+                return err
+            },
+            validate: func(got *proto.@model.Name@, err error) {
+                s.Require().NoError(err)
+                s.Require().NotNil(got)
+                s.Require().NotZero(got.Id)
+            },
+        },
+        {
+            name: "Get_Success",
+            setup: func() (*proto.@model.Name@, error) {
+                return s.@toLower(model.Name)@.Create(s.ctx, &proto.Create@model.Name@Request{
+                    @for _, field in model.Fields@
+                    @if field.Name != "Id"@
+                    @field.Name@: "test@field.Name@",
+                    @end@
+                    @end@
+                })
+            },
+            run: func(created *proto.@model.Name@) error {
+                _, err := s.@toLower(model.Name)@.Get(s.ctx, &proto.Get@model.Name@Request{
+                    Id: created.Id,
+                })
+                return err
+            },
+            validate: func(got *proto.@model.Name@, err error) {
+                s.Require().NoError(err)
+                s.Require().NotNil(got)
+            },
+        },
+        {
+            name: "Get_NotFound",
+            run: func(_ *proto.@model.Name@) error {
+                _, err := s.@toLower(model.Name)@.Get(s.ctx, &proto.Get@model.Name@Request{
+                    Id: 999999,
+                })
+                return err
+            },
+            wantErr: true,
+            wantErrCode: codes.NotFound,
+        },
+        {
+            name: "Update_Success",
+            setup: func() (*proto.@model.Name@, error) {
+                return s.@toLower(model.Name)@.Create(s.ctx, &proto.Create@model.Name@Request{
+                    @for _, field in model.Fields@
+                    @if field.Name != "Id"@
+                    @field.Name@: "test@field.Name@",
+                    @end@
+                    @end@
+                })
+            },
+            run: func(created *proto.@model.Name@) error {
+                _, err := s.@toLower(model.Name)@.Update(s.ctx, &proto.Update@model.Name@Request{
+                    Id: created.Id,
+                    @for _, field in model.Fields@
+                    @if field.Name != "Id"@
+                    @field.Name@: "updated@field.Name@",
+                    @end@
+                    @end@
+                })
+                return err
+            },
+            validate: func(got *proto.@model.Name@, err error) {
+                s.Require().NoError(err)
+                s.Require().NotNil(got)
+                @for _, field in model.Fields@
+                @if field.Name != "Id"@
+                s.Require().Equal("updated@field.Name@", got.@field.Name@)
+                @end@
+                @end@
+            },
+        },
+        {
+            name: "Delete_Success",
+            setup: func() (*proto.@model.Name@, error) {
+                return s.@toLower(model.Name)@.Create(s.ctx, &proto.Create@model.Name@Request{
+                    @for _, field in model.Fields@
+                    @if field.Name != "Id"@
+                    @field.Name@: "test@field.Name@",
+                    @end@
+                    @end@
+                })
+            },
+            run: func(created *proto.@model.Name@) error {
+                _, err := s.@toLower(model.Name)@.Delete(s.ctx, &proto.Delete@model.Name@Request{
+                    Id: created.Id,
+                })
+                return err
+            },
+            validate: func(_ *proto.@model.Name@, err error) {
+                s.Require().NoError(err)
+                // Verify deletion
+                _, err = s.@toLower(model.Name)@.Get(s.ctx, &proto.Get@model.Name@Request{Id: 1})
+                s.Require().Error(err)
+                st, ok := status.FromError(err)
+                s.Require().True(ok)
+                s.Require().Equal(codes.NotFound, st.Code())
+            },
+        },
+    }
+
+    for _, tt := range tests {
+        s.Run(tt.name, func() {
+            var setupData *proto.@model.Name@
+            var err error
+            
+            if tt.setup != nil {
+                setupData, err = tt.setup()
+                s.Require().NoError(err)
+            }
+
+            err = tt.run(setupData)
+
+            if tt.wantErr {
+                s.Require().Error(err)
+                st, ok := status.FromError(err)
+                s.Require().True(ok)
+                s.Require().Equal(tt.wantErrCode, st.Code())
+                return
+            }
+
+            if tt.validate != nil {
+                tt.validate(setupData, err)
+            }
+        })
+    }
+}
+@end@
+
+func TestGRPCSuite(t *testing.T) {
+    suite.Run(t, new(GRPCTestSuite))
+} 

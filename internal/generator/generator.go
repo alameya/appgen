@@ -44,6 +44,17 @@ func (g *Generator) GenerateFromProtoFiles(protoFiles []string, outputDir string
 		}
 	}
 
+	// Generate gRPC integration tests
+	if err := os.MkdirAll(filepath.Join(outputDir, "internal", "integration"), 0755); err != nil {
+		return fmt.Errorf("failed to create integration test directory: %w", err)
+	}
+
+	vars := make(jet.VarMap)
+	outPath := filepath.Join(outputDir, "internal", "integration", "grpc_test.go")
+	if err := g.template.generateFromTemplateWithVars("grpc_test.go.tmpl", outPath, vars, allModels); err != nil {
+		return fmt.Errorf("failed to generate gRPC integration tests: %w", err)
+	}
+
 	return nil
 }
 
