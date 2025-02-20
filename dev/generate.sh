@@ -12,6 +12,7 @@ echo "Creating directories..."
 mkdir -p out/api
 mkdir -p out/internal/grpc
 mkdir -p out/internal/proto
+mkdir -p out/migrations
 
 # Generate proto files
 echo "Generating proto files..."
@@ -35,9 +36,19 @@ cd out
 echo "Installing dependencies..."
 go mod tidy
 
+# Install goose if not installed
+if ! command -v goose &> /dev/null; then
+    echo "Installing goose..."
+    go install github.com/pressly/goose/v3/cmd/goose@latest
+fi
+
 echo "Running migrations..."
-# Используем существующую базу postgres
-PGPASSWORD=postgres psql -h localhost -U postgres -d postgres -f migrations/*.sql
+# Set database URL for goose
+export GOOSE_DRIVER=postgres
+export GOOSE_DBSTRING="postgres://postgres:postgres@localhost:5432/postgres?sslmode=disable"
+
+# Run migrations
+goose -dir migrations up
 
 # Commit and push generated code
 echo "Committing and pushing changes..."
