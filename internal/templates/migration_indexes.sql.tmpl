@@ -2,9 +2,8 @@
 -- +goose StatementBegin
 -- Create indexes for {{.Name}}
 {{- range .Fields}}
-{{- field := .}}
-{{- if hasSuffix(toLower(field.Name), "_id")}}
-CREATE INDEX IF NOT EXISTS idx_{{toLower(.Name)}}_{{toLower(field.Name)}} ON {{toLower(.Name)}}s({{toLower(field.DbName)}});
+{{- if hasSuffix .Name "_id"}}
+CREATE INDEX IF NOT EXISTS idx_{{toLower .Name}}s_{{toLower .Name}} ON {{toLower .Name}}s({{toLower .DbName}});
 {{- end}}
 {{- end}}
 -- +goose StatementEnd
@@ -12,9 +11,8 @@ CREATE INDEX IF NOT EXISTS idx_{{toLower(.Name)}}_{{toLower(field.Name)}} ON {{t
 -- +goose Down
 -- +goose StatementBegin
 {{- range .Fields}}
-{{- field := .}}
-{{- if hasSuffix(toLower(field.Name), "_id")}}
-DROP INDEX IF EXISTS idx_{{toLower(.Name)}}_{{toLower(field.Name)}};
+{{- if hasSuffix .Name "_id"}}
+DROP INDEX IF EXISTS idx_{{toLower .Name}}s_{{toLower .Name}};
 {{- end}}
 {{- end}}
 -- +goose StatementEnd 
