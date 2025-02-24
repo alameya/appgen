@@ -63,27 +63,41 @@ cd out && go fmt ./... && cd ..
 # Build and run migrations
 cd out
 
+# Load environment variables from .env
+echo "Loading environment variables..."
+if [ -f ../.env ]; then
+  export $(cat ../.env | grep -v '^#' | xargs)
+elif [ -f .env ]; then
+  export $(cat .env | grep -v '^#' | xargs)
+else
+  echo "Error: .env file not found"
+  exit 1
+fi
+
 echo "Installing dependencies..."
 go mod tidy
 
 # Run migrations
 echo "Running migrations..."
 # Wait for PostgreSQL to be ready
-until PGPASSWORD=postgres psql -h localhost -U postgres -c '\q' 2>/dev/null; do
+until PGPASSWORD=${DB_PASSWORD} psql -h ${DB_HOST} -U ${DB_USER} -c '\q' 2>/dev/null; do
   echo "Waiting for PostgreSQL..."
   sleep 1
 done
 
 # Run migrations down
 echo "Rolling back all migrations..."
-GOOSE_DRIVER=postgres \
-  GOOSE_DBSTRING="postgres://postgres:postgres@localhost:5432/postgres?sslmode=disable" \
-  goose -dir migrations down-to 0
+PGPASSWORD=${DB_PASSWORD} psql -h ${DB_HOST} -U ${DB_USER} -d ${DB_NAME} -c "
+  DROP SCHEMA public CASCADE;
+  CREATE SCHEMA public;
+  GRANT ALL ON SCHEMA public TO ${DB_USER};
+  GRANT ALL ON SCHEMA public TO public;
+"
 
 # Run migrations up
 echo "Applying all migrations..."
 GOOSE_DRIVER=postgres \
-  GOOSE_DBSTRING="postgres://postgres:postgres@localhost:5432/postgres?sslmode=disable" \
+  GOOSE_DBSTRING="postgres://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_NAME}?sslmode=disable" \
   goose -dir migrations up
 
 echo "Starting the service..."

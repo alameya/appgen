@@ -51,10 +51,9 @@ func (g *Generator) GenerateFromProtoFiles(protoFiles []string, outputDir string
 		}
 	}
 
-	// Затем генерируем миграции в обратном порядке (от независимых к зависимым)
-	for i := len(sortedModels) - 1; i >= 0; i-- {
-		model := sortedModels[i]
-		if err := g.generateMigration(model, outputDir, len(sortedModels)-1-i); err != nil {
+	// Затем генерируем миграции в том же порядке что и модели
+	for i, model := range sortedModels {
+		if err := g.generateMigration(model, outputDir, i); err != nil {
 			return fmt.Errorf("failed to generate migration for model %s: %w", model.Name, err)
 		}
 		// Добавляем задержку между генерацией миграций
@@ -131,14 +130,24 @@ func (g *Generator) buildDependencyGraph(models []*Model) map[string][]string {
 func (g *Generator) sortModelsByDependencies(models []*Model) []*Model {
 	graph := g.buildDependencyGraph(models)
 	visited := make(map[string]bool)
+	visiting := make(map[string]bool) // Для обнаружения циклических зависимостей
 	sorted := make([]*Model, 0)
+
+	// Выводим дерево зависимостей
+	fmt.Println("\nDependency tree:")
+	g.printDependencyTree(graph, "", "", make(map[string]bool))
+	fmt.Println()
 
 	var visit func(model *Model)
 	visit = func(model *Model) {
 		if visited[model.Name] {
 			return
 		}
-		visited[model.Name] = true
+		if visiting[model.Name] {
+			panic(fmt.Sprintf("circular dependency detected: %s", model.Name))
+		}
+
+		visiting[model.Name] = true
 
 		for _, dep := range graph[model.Name] {
 			for _, m := range models {
@@ -147,14 +156,63 @@ func (g *Generator) sortModelsByDependencies(models []*Model) []*Model {
 				}
 			}
 		}
-		sorted = append(sorted, model)
+		visiting[model.Name] = false
+		visited[model.Name] = true
+		sorted = append([]*Model{model}, sorted...) // Добавляем в начало списка
 	}
 
 	for _, model := range models {
-		visit(model)
+		if !visited[model.Name] {
+			visit(model)
+		}
 	}
 
+	// Выводим порядок генерации
+	fmt.Println("Generation order:")
+	for i, model := range sorted {
+		fmt.Printf("%d. %s\n", i+1, model.Name)
+	}
+	fmt.Println()
+
 	return sorted
+}
+
+// printDependencyTree выводит дерево зависимостей в консоль
+func (g *Generator) printDependencyTree(graph map[string][]string, prefix string, name string, visited map[string]bool) {
+	if name == "" {
+		// Находим корневые узлы (без зависимостей)
+		hasIncoming := make(map[string]bool)
+		for _, deps := range graph {
+			for _, dep := range deps {
+				hasIncoming[dep] = true
+			}
+		}
+
+		for node := range graph {
+			if !hasIncoming[node] {
+				g.printDependencyTree(graph, "", node, visited)
+			}
+		}
+		return
+	}
+
+	if visited[name] {
+		fmt.Printf("%s%s (circular)\n", prefix, name)
+		return
+	}
+
+	visited[name] = true
+	fmt.Printf("%s%s\n", prefix, name)
+
+	for i, dep := range graph[name] {
+		nextPrefix := prefix + "│   "
+		if i == len(graph[name])-1 {
+			nextPrefix = prefix + "    "
+		}
+		g.printDependencyTree(graph, nextPrefix, dep, visited)
+	}
+
+	visited[name] = false
 }
 
 func (g *Generator) generateMigration(model *Model, outputDir string, index int) error {
