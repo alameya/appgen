@@ -4,23 +4,24 @@ import (
     "context"
     "fmt"
     
-    "github.com/jmoiron/sqlx"
-    sq "github.com/Masterminds/squirrel"
-
     "app/internal/models"
+    "app/internal/interfaces"
+    sq "github.com/Masterminds/squirrel"
+    "github.com/jmoiron/sqlx"
 )
 
-type {{.Name}}Repository struct {
+type repository struct {
     db *sqlx.DB
 }
 
-func New{{.Name}}Repository(db *sqlx.DB) *{{.Name}}Repository {
-    return &{{.Name}}Repository{
-        db: db,
-    }
+// Проверка соответствия интерфейсу
+var _ interfaces.{{.Name}}Repository = (*repository)(nil)
+
+func NewRepository(db *sqlx.DB) *repository {
+    return &repository{db: db}
 }
 
-func (r *{{.Name}}Repository) Create(ctx context.Context, item *models.{{.Name}}) (*models.{{.Name}}, error) {
+func (r *repository) Create(ctx context.Context, item *models.{{.Name}}) (*models.{{.Name}}, error) {
     query := sq.Insert("{{toLower .Name}}s").
         Columns(
             {{- range .Fields}}
@@ -55,7 +56,7 @@ func (r *{{.Name}}Repository) Create(ctx context.Context, item *models.{{.Name}}
     return result, nil
 }
 
-func (r *{{.Name}}Repository) Get(ctx context.Context, id int64) (*models.{{.Name}}, error) {
+func (r *repository) Get(ctx context.Context, id int64) (*models.{{.Name}}, error) {
     query := sq.Select("*").
         From("{{toLower .Name}}s").
         Where(sq.Eq{"id": id})
@@ -73,7 +74,7 @@ func (r *{{.Name}}Repository) Get(ctx context.Context, id int64) (*models.{{.Nam
     return &result, nil
 }
 
-func (r *{{.Name}}Repository) List(ctx context.Context) ([]*models.{{.Name}}, error) {
+func (r *repository) List(ctx context.Context) ([]*models.{{.Name}}, error) {
     query := sq.Select("*").From("{{toLower .Name}}s")
 
     sql, args, err := query.ToSql()
@@ -89,7 +90,7 @@ func (r *{{.Name}}Repository) List(ctx context.Context) ([]*models.{{.Name}}, er
     return results, nil
 }
 
-func (r *{{.Name}}Repository) Update(ctx context.Context, item *models.{{.Name}}) error {
+func (r *repository) Update(ctx context.Context, item *models.{{.Name}}) error {
     query := sq.Update("{{toLower .Name}}s")
     {{- range .Fields}}
     {{- if ne .Name "id"}}
@@ -112,7 +113,7 @@ func (r *{{.Name}}Repository) Update(ctx context.Context, item *models.{{.Name}}
     return nil
 }
 
-func (r *{{.Name}}Repository) Delete(ctx context.Context, id int64) error {
+func (r *repository) Delete(ctx context.Context, id int64) error {
     query := sq.Delete("{{toLower .Name}}s").
         Where(sq.Eq{"id": id})
 

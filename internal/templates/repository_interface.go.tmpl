@@ -1,0 +1,16 @@
+package repository
+
+import (
+	"context"
+	"app/internal/models"
+)
+
+{{range .}}
+type {{.Name}}Repository interface {
+	Create(ctx context.Context, item *models.{{.Name}}) (*models.{{.Name}}, error)
+	Get(ctx context.Context, id int64) (*models.{{.Name}}, error)
+	List(ctx context.Context) ([]*models.{{.Name}}, error)
+	Update(ctx context.Context, item *models.{{.Name}}) error
+	Delete(ctx context.Context, id int64) error
+}
+{{end}} 

@@ -1,46 +1,54 @@
-package {{toLower .Name}}
+package service
 
 import (
 	"context"
 
 	"app/internal/models"
-	"app/internal/repository"
+	"app/internal/interfaces"
 )
 
-type {{.Name}}Repository interface {
-	Create(ctx context.Context, item *models.{{.Name}}) (*models.{{.Name}}, error)
-	Get(ctx context.Context, id int64) (*models.{{.Name}}, error)
-	List(ctx context.Context) ([]*models.{{.Name}}, error)
-	Update(ctx context.Context, item *models.{{.Name}}) error
-	Delete(ctx context.Context, id int64) error
+type {{toLower .Name}}Service struct {
+	repo interfaces.{{.Name}}Repository
 }
 
-type {{.Name}}Service struct {
-	repo *repository.Repository
+func New{{.Name}}Service(repo interfaces.{{.Name}}Repository) interfaces.{{.Name}}Service {
+	return &{{toLower .Name}}Service{repo: repo}
 }
 
-func New{{.Name}}Service(repo *repository.Repository) *{{.Name}}Service {
-	return &{{.Name}}Service{
-		repo: repo,
+func (s *{{toLower .Name}}Service) Create(ctx context.Context, item *models.{{.Name}}) (*models.{{.Name}}, error) {
+	result, err := s.repo.Create(ctx, item)
+	if err != nil {
+		return nil, err
 	}
+	return result, nil
 }
 
-func (s *{{.Name}}Service) Create(ctx context.Context, item *models.{{.Name}}) (*models.{{.Name}}, error) {
-	return s.repo.{{.Name}}.Create(ctx, item)
+func (s *{{toLower .Name}}Service) Get(ctx context.Context, id int64) (*models.{{.Name}}, error) {
+	result, err := s.repo.Get(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	return result, nil
 }
 
-func (s *{{.Name}}Service) Get(ctx context.Context, id int64) (*models.{{.Name}}, error) {
-	return s.repo.{{.Name}}.Get(ctx, id)
+func (s *{{toLower .Name}}Service) List(ctx context.Context) ([]*models.{{.Name}}, error) {
+	results, err := s.repo.List(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return results, nil
 }
 
-func (s *{{.Name}}Service) List(ctx context.Context) ([]*models.{{.Name}}, error) {
-	return s.repo.{{.Name}}.List(ctx)
+func (s *{{toLower .Name}}Service) Update(ctx context.Context, item *models.{{.Name}}) error {
+	if err := s.repo.Update(ctx, item); err != nil {
+		return err
+	}
+	return nil
 }
 
-func (s *{{.Name}}Service) Update(ctx context.Context, item *models.{{.Name}}) error {
-	return s.repo.{{.Name}}.Update(ctx, item)
-}
-
-func (s *{{.Name}}Service) Delete(ctx context.Context, id int64) error {
-	return s.repo.{{.Name}}.Delete(ctx, id)
+func (s *{{toLower .Name}}Service) Delete(ctx context.Context, id int64) error {
+	if err := s.repo.Delete(ctx, id); err != nil {
+		return err
+	}
+	return nil
 } 

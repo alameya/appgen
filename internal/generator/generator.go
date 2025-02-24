@@ -71,6 +71,7 @@ func (g *Generator) generateCommonFiles(models []*Model, outputDir string) error
 		"Dockerfile.tmpl":         filepath.Join(outputDir, "Dockerfile"),
 		"env.tmpl":                filepath.Join(outputDir, ".env"),
 		"repository.go.tmpl":      filepath.Join(outputDir, "internal", "repository", "repository.go"),
+		"interfaces.go.tmpl":      filepath.Join(outputDir, "internal", "interfaces", "interfaces.go"),
 		"gitlab-ci.yml.tmpl":      filepath.Join(outputDir, ".gitlab-ci.yml"),
 		"grpc_test.go.tmpl":       filepath.Join(outputDir, "internal", "tests", "grpc_test.go"),
 	}
@@ -92,9 +93,19 @@ func (g *Generator) generateFilesForModel(model *Model, outputDir string, modelI
 	files := map[string]string{
 		"repository_model.go.tmpl": filepath.Join(outputDir, "internal", "repository", strings.ToLower(model.Name), "repository.go"),
 		"handler.go.tmpl":          filepath.Join(outputDir, "internal", "handler", strings.ToLower(model.Name), "handler.go"),
-		"service.go.tmpl":          filepath.Join(outputDir, "internal", "service", strings.ToLower(model.Name), "service.go"),
 		"models.go.tmpl":           filepath.Join(outputDir, "internal", "models", strings.ToLower(model.Name)+".go"),
 		"grpc.go.tmpl":             filepath.Join(outputDir, "internal", "grpc", strings.ToLower(model.Name), "server.go"),
+	}
+
+	// Генерируем файл сервиса
+	servicePath := filepath.Join(outputDir, "internal", "service")
+	if err := os.MkdirAll(servicePath, 0755); err != nil {
+		return fmt.Errorf("failed to create service directory: %w", err)
+	}
+
+	if err := g.template.generateFromTemplateWithVars("service.go.tmpl",
+		filepath.Join(servicePath, strings.ToLower(model.Name)+".go"), nil, model); err != nil {
+		return fmt.Errorf("failed to generate service file: %w", err)
 	}
 
 	for tmpl, outPath := range files {

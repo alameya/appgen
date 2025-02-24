@@ -17,6 +17,7 @@ import (
 
 	"app/internal/proto"
 	"app/internal/repository"
+	"app/internal/service"
 
 	{{- range .}}
 	{{toLower .Name}}Grpc "app/internal/grpc/{{toLower .Name}}"
@@ -64,6 +65,11 @@ func main() {
 	// Create repository
 	repo := repository.NewRepository(db)
 
+	// Create services
+	{{- range .}}
+	{{toLower .Name}}Service := service.New{{.Name}}Service(repo.{{.Name}})
+	{{- end}}
+
 	// Create context with cancellation
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -76,7 +82,7 @@ func main() {
 	s := grpc.NewServer()
 
 	{{- range .}}
-	proto.Register{{.Name}}ServiceServer(s, {{toLower .Name}}Grpc.NewServer(repo))
+	proto.Register{{.Name}}ServiceServer(s, {{toLower .Name}}Grpc.NewServer({{toLower .Name}}Service))
 	{{- end}}
 
 	// Register reflection service on gRPC server

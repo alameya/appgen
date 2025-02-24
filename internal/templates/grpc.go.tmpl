@@ -5,17 +5,17 @@ import (
     "fmt"
 
     "app/internal/proto"
-    "app/internal/repository"
+    "app/internal/interfaces"
     "app/internal/models"
 )
 
 type Server struct {
     proto.Unimplemented{{.Name}}ServiceServer
-    repo *repository.Repository
+    service interfaces.{{.Name}}Service
 }
 
-func NewServer(repo *repository.Repository) *Server {
-    return &Server{repo: repo}
+func NewServer(service interfaces.{{.Name}}Service) *Server {
+    return &Server{service: service}
 }
 
 func (s *Server) Create(ctx context.Context, req *proto.Create{{.Name}}Request) (*proto.{{.Name}}, error) {
@@ -27,7 +27,7 @@ func (s *Server) Create(ctx context.Context, req *proto.Create{{.Name}}Request) 
         {{- end}}
     }
 
-    result, err := s.repo.{{.Name}}.Create(ctx, item)
+    result, err := s.service.Create(ctx, item)
     if err != nil {
         return nil, fmt.Errorf("failed to create {{toLower .Name}}: %w", err)
     }
@@ -36,7 +36,7 @@ func (s *Server) Create(ctx context.Context, req *proto.Create{{.Name}}Request) 
 }
 
 func (s *Server) Get(ctx context.Context, req *proto.Get{{.Name}}Request) (*proto.{{.Name}}, error) {
-    result, err := s.repo.{{.Name}}.Get(ctx, req.Id)
+    result, err := s.service.Get(ctx, req.Id)
     if err != nil {
         return nil, fmt.Errorf("failed to get {{toLower .Name}}: %w", err)
     }
@@ -45,7 +45,7 @@ func (s *Server) Get(ctx context.Context, req *proto.Get{{.Name}}Request) (*prot
 }
 
 func (s *Server) List(ctx context.Context, _ *proto.List{{.Name}}Request) (*proto.List{{.Name}}Response, error) {
-    results, err := s.repo.{{.Name}}.List(ctx)
+    results, err := s.service.List(ctx)
     if err != nil {
         return nil, fmt.Errorf("failed to list {{toLower .Name}}s: %w", err)
     }
@@ -70,7 +70,7 @@ func (s *Server) Update(ctx context.Context, req *proto.Update{{.Name}}Request) 
         {{- end}}
     }
 
-    if err := s.repo.{{.Name}}.Update(ctx, item); err != nil {
+    if err := s.service.Update(ctx, item); err != nil {
         return nil, fmt.Errorf("failed to update {{toLower .Name}}: %w", err)
     }
 
@@ -78,7 +78,7 @@ func (s *Server) Update(ctx context.Context, req *proto.Update{{.Name}}Request) 
 }
 
 func (s *Server) Delete(ctx context.Context, req *proto.Delete{{.Name}}Request) (*proto.EmptyResponse, error) {
-    if err := s.repo.{{.Name}}.Delete(ctx, req.Id); err != nil {
+    if err := s.service.Delete(ctx, req.Id); err != nil {
         return nil, fmt.Errorf("failed to delete {{toLower .Name}}: %w", err)
     }
 

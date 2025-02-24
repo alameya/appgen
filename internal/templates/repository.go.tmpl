@@ -4,8 +4,9 @@ import (
 	"github.com/jmoiron/sqlx"
 	sq "github.com/Masterminds/squirrel"
 
+	"app/internal/interfaces"
 	{{- range .}}
-	{{toLower .Name}}Repository "app/internal/repository/{{toLower .Name}}"
+	{{toLower .Name}} "app/internal/repository/{{toLower .Name}}"
 	{{- end}}
 )
 
@@ -14,7 +15,7 @@ type Repository struct {
 	db *sqlx.DB
 
 	{{- range .}}
-	{{.Name}} *{{toLower .Name}}Repository.{{.Name}}Repository
+	{{.Name}} interfaces.{{.Name}}Repository
 	{{- end}}
 }
 
@@ -26,7 +27,7 @@ func NewRepository(db *sqlx.DB) *Repository {
 	return &Repository{
 		db: db,
 		{{- range .}}
-		{{.Name}}: {{toLower .Name}}Repository.New{{.Name}}Repository(db),
+		{{.Name}}: {{toLower .Name}}.NewRepository(db),
 		{{- end}}
 	}
 } 
