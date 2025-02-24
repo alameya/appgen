@@ -1,4 +1,4 @@
-package {{toLower(.Name)}}
+package {{toLower .Name}}
 
 import (
     "context"
@@ -21,27 +21,25 @@ func New{{.Name}}Repository(db *sqlx.DB) *{{.Name}}Repository {
 }
 
 func (r *{{.Name}}Repository) Create(ctx context.Context, item *models.{{.Name}}) (*models.{{.Name}}, error) {
-    // Формируем список колонок и значений, исключая Id
-    columns := []string{
-        {{range .Fields}}
-        {{if toLower(.Name) != "id"}}"{{toLower(.DbName)}}",{{end}}
-        {{end}}
-        "created_at",
-        "updated_at",
-    }
-
-    values := []interface{}{
-        {{range .Fields}}
-        {{if toLower(.Name) != "id"}}item.{{toCamel(.Name)}},{{end}}
-        {{end}}
-        sq.Expr("CURRENT_TIMESTAMP"),
-        sq.Expr("CURRENT_TIMESTAMP"),
-    }
-
-    // Строим INSERT запрос
-    query := sq.Insert("{{toLower(.Name)}}s").
-        Columns(columns...).
-        Values(values...).
+    query := sq.Insert("{{toLower .Name}}s").
+        Columns(
+            {{- range .Fields}}
+            {{- if ne .Name "id"}}
+            "{{toLower .DbName}}",
+            {{- end}}
+            {{- end}}
+            "created_at",
+            "updated_at",
+        ).
+        Values(
+            {{- range .Fields}}
+            {{- if ne .Name "id"}}
+            item.{{toCamel .Name}},
+            {{- end}}
+            {{- end}}
+            sq.Expr("CURRENT_TIMESTAMP"),
+            sq.Expr("CURRENT_TIMESTAMP"),
+        ).
         Suffix("RETURNING *")
 
     sql, args, err := query.ToSql()
@@ -49,17 +47,17 @@ func (r *{{.Name}}Repository) Create(ctx context.Context, item *models.{{.Name}}
         return nil, fmt.Errorf("failed to build query: %w", err)
     }
 
-    var result models.{{.Name}}
-    if err := r.db.GetContext(ctx, &result, sql, args...); err != nil {
+    result := &models.{{.Name}}{}
+    if err := r.db.GetContext(ctx, result, sql, args...); err != nil {
         return nil, fmt.Errorf("failed to execute query: %w", err)
     }
 
-    return &result, nil
+    return result, nil
 }
 
 func (r *{{.Name}}Repository) Get(ctx context.Context, id int64) (*models.{{.Name}}, error) {
     query := sq.Select("*").
-        From("{{toLower(.Name)}}s").
+        From("{{toLower .Name}}s").
         Where(sq.Eq{"id": id})
 
     sql, args, err := query.ToSql()
@@ -76,8 +74,7 @@ func (r *{{.Name}}Repository) Get(ctx context.Context, id int64) (*models.{{.Nam
 }
 
 func (r *{{.Name}}Repository) List(ctx context.Context) ([]*models.{{.Name}}, error) {
-    query := sq.Select("*").
-        From("{{toLower(.Name)}}s")
+    query := sq.Select("*").From("{{toLower .Name}}s")
 
     sql, args, err := query.ToSql()
     if err != nil {
@@ -93,39 +90,30 @@ func (r *{{.Name}}Repository) List(ctx context.Context) ([]*models.{{.Name}}, er
 }
 
 func (r *{{.Name}}Repository) Update(ctx context.Context, item *models.{{.Name}}) error {
-    query := sq.Update("{{toLower(.Name)}}s").
+    query := sq.Update("{{toLower .Name}}s")
+    {{- range .Fields}}
+    {{- if ne .Name "id"}}
+    query = query.Set("{{toLower .DbName}}", item.{{toCamel .Name}})
+    {{- end}}
+    {{- end}}
+    query = query.
         Set("updated_at", sq.Expr("CURRENT_TIMESTAMP")).
         Where(sq.Eq{"id": item.Id})
-    {{range .Fields}}
-    {{if toLower(.Name) != "id"}}
-    query = query.Set("{{toLower(.DbName)}}", item.{{toCamel(.Name)}})
-    {{end}}
-    {{end}}
 
     sql, args, err := query.ToSql()
     if err != nil {
         return fmt.Errorf("failed to build query: %w", err)
     }
 
-    result, err := r.db.ExecContext(ctx, sql, args...)
-    if err != nil {
+    if _, err := r.db.ExecContext(ctx, sql, args...); err != nil {
         return fmt.Errorf("failed to execute query: %w", err)
-    }
-
-    rows, err := result.RowsAffected()
-    if err != nil {
-        return fmt.Errorf("failed to get rows affected: %w", err)
-    }
-
-    if rows == 0 {
-        return fmt.Errorf("record not found")
     }
 
     return nil
 }
 
 func (r *{{.Name}}Repository) Delete(ctx context.Context, id int64) error {
-    query := sq.Delete("{{toLower(.Name)}}s").
+    query := sq.Delete("{{toLower .Name}}s").
         Where(sq.Eq{"id": id})
 
     sql, args, err := query.ToSql()

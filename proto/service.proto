@@ -1,0 +1,148 @@
+syntax = "proto3";
+
+package proto;
+
+option go_package = "app/internal/proto";
+
+import "google/api/annotations.proto";
+
+// Общий пустой ответ
+message EmptyResponse {}
+
+// Курьер
+message Courier {
+    int64 id = 1;
+    string name = 2;
+    string phone = 3;
+    string email = 4;
+    string status = 5;
+    int64 location_id = 6;
+}
+
+message CreateCourierRequest {
+    string name = 1;
+    string phone = 2;
+    string email = 3;
+    string status = 4;
+    int64 location_id = 5;
+}
+
+message GetCourierRequest {
+    int64 id = 1;
+}
+
+message ListCourierRequest {}
+
+message ListCourierResponse {
+    repeated Courier items = 1;
+}
+
+message UpdateCourierRequest {
+    int64 id = 1;
+    string name = 2;
+    string phone = 3;
+    string email = 4;
+    string status = 5;
+    int64 location_id = 6;
+}
+
+message DeleteCourierRequest {
+    int64 id = 1;
+}
+
+// Локация
+message Location {
+    int64 id = 1;
+    string address = 2;
+    double latitude = 3;
+    double longitude = 4;
+}
+
+message CreateLocationRequest {
+    string address = 1;
+    double latitude = 2;
+    double longitude = 3;
+}
+
+message GetLocationRequest {
+    int64 id = 1;
+}
+
+message ListLocationRequest {}
+
+message ListLocationResponse {
+    repeated Location items = 1;
+}
+
+message UpdateLocationRequest {
+    int64 id = 1;
+    string address = 2;
+    double latitude = 3;
+    double longitude = 4;
+}
+
+message DeleteLocationRequest {
+    int64 id = 1;
+}
+
+// Сервис для работы с курьерами
+service CourierService {
+    rpc Create(CreateCourierRequest) returns (Courier) {
+        option (google.api.http) = {
+            post: "/api/v1/couriers"
+            body: "*"
+        };
+    }
+    rpc Get(GetCourierRequest) returns (Courier) {
+        option (google.api.http) = {
+            get: "/api/v1/couriers/{id}"
+        };
+    }
+    rpc List(ListCourierRequest) returns (ListCourierResponse) {
+        option (google.api.http) = {
+            get: "/api/v1/couriers"
+        };
+    }
+    rpc Update(UpdateCourierRequest) returns (Courier) {
+        option (google.api.http) = {
+            put: "/api/v1/couriers/{id}"
+            body: "*"
+        };
+    }
+    rpc Delete(DeleteCourierRequest) returns (EmptyResponse) {
+        option (google.api.http) = {
+            delete: "/api/v1/couriers/{id}"
+        };
+    }
+}
+
+// Сервис для работы с локациями
+service LocationService {
+    rpc Create(CreateLocationRequest) returns (Location) {
+        option (google.api.http) = {
+            post: "/api/v1/locations"
+            body: "*"
+        };
+    }
+    rpc Get(GetLocationRequest) returns (Location) {
+        option (google.api.http) = {
+            get: "/api/v1/locations/{id}"
+        };
+    }
+    rpc List(ListLocationRequest) returns (ListLocationResponse) {
+        option (google.api.http) = {
+            get: "/api/v1/locations"
+        };
+    }
+    rpc Update(UpdateLocationRequest) returns (Location) {
+        option (google.api.http) = {
+            put: "/api/v1/locations/{id}"
+            body: "*"
+        };
+    }
+    rpc Delete(DeleteLocationRequest) returns (EmptyResponse) {
+        option (google.api.http) = {
+            delete: "/api/v1/locations/{id}"
+        };
+    }
+} 

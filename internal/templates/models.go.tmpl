@@ -5,9 +5,9 @@ import (
 )
 
 type {{.Name}} struct {
-	{{range .Fields}}
-	{{toCamel(.Name)}} {{.Type}} `json:"{{toLower(.JsonName)}}" db:"{{toLower(.DbName)}}"`
-	{{end}}
+	{{- range .Fields}}
+	{{toCamel .Name}} {{if eq .Type "float32"}}float64{{else}}{{.Type}}{{end}} `json:"{{toLower .JsonName}}" db:"{{toLower .DbName}}"`
+	{{- end}}
 	CreatedAt time.Time `json:"created_at" db:"created_at"`
 	UpdatedAt time.Time `json:"updated_at" db:"updated_at"`
 }

@@ -14,15 +14,11 @@ services:
 stages:
   - test
   - build
-  - migrate
   - deploy
 
 before_script:
   - go version
-  - go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.32.0
-  - go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.3.0
-  - go install github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-grpc-gateway@v2.19.1
-  - go install github.com/pressly/goose/v3/cmd/goose@latest
+  - curl -sSf https://atlasgo.sh | sh
 
 test:
   stage: test
@@ -45,22 +41,12 @@ build:
     paths:
       - app
 
-migrate:
-  stage: migrate
-  script:
-    - goose -dir migrations postgres "$DATABASE_URL" up
-  only:
-    - main
-  environment:
-    name: production
-
 deploy:
   stage: deploy
   script:
+    - atlas schema apply -u "$DATABASE_URL" --to file://atlas.hcl
     - echo "Deploy to production server"
   only:
     - main
   environment:
-    name: production
-  needs:
-    - migrate 
+    name: production 

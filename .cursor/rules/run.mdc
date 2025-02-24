@@ -1,0 +1,5 @@
+---
+description: run generation
+globs: 
+---
+after generate answer run ./dev/generate.sh

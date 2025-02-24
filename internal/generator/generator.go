@@ -6,8 +6,6 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
-
-	"github.com/CloudyKit/jet/v6"
 )
 
 type Generator struct {
@@ -22,10 +20,15 @@ func New() *Generator {
 	}
 }
 
+// GenerateFromProto генерирует код из одного proto файла
+func (g *Generator) GenerateFromProto(protoPath, outputDir string) error {
+	return g.GenerateFromProtoFiles([]string{protoPath}, outputDir)
+}
+
+// GenerateFromProtoFiles генерирует код из нескольких proto файлов
 func (g *Generator) GenerateFromProtoFiles(protoFiles []string, outputDir string) error {
 	var allModels []*Model
 
-	// Собираем модели из всех файлов
 	for _, protoPath := range protoFiles {
 		models, err := g.parser.Parse(protoPath)
 		if err != nil {
@@ -34,23 +37,31 @@ func (g *Generator) GenerateFromProtoFiles(protoFiles []string, outputDir string
 		allModels = append(allModels, models...)
 	}
 
-	// Генерируем общие файлы
+	// Сортируем модели по зависимостям
+	sortedModels := g.sortModelsByDependencies(allModels)
+
 	if err := g.generateCommonFiles(allModels, outputDir); err != nil {
 		return err
 	}
 
-	// Генерируем файлы для каждой модели
-	for i, model := range allModels {
-		if err := g.template.generateFilesForModel(model, outputDir, i); err != nil {
+	// Сначала генерируем все файлы кроме миграций
+	for i, model := range sortedModels {
+		if err := g.generateFilesForModel(model, outputDir, i); err != nil {
 			return fmt.Errorf("failed to generate files for model %s: %w", model.Name, err)
 		}
 	}
 
-	return nil
-}
+	// Затем генерируем миграции в обратном порядке (от независимых к зависимым)
+	for i := len(sortedModels) - 1; i >= 0; i-- {
+		model := sortedModels[i]
+		if err := g.generateMigration(model, outputDir, len(sortedModels)-1-i); err != nil {
+			return fmt.Errorf("failed to generate migration for model %s: %w", model.Name, err)
+		}
+		// Добавляем задержку между генерацией миграций
+		time.Sleep(time.Second)
+	}
 
-func (g *Generator) GenerateFromProto(protoPath, outputDir string) error {
-	return g.GenerateFromProtoFiles([]string{protoPath}, outputDir)
+	return nil
 }
 
 func (g *Generator) generateCommonFiles(models []*Model, outputDir string) error {
@@ -62,18 +73,15 @@ func (g *Generator) generateCommonFiles(models []*Model, outputDir string) error
 		"env.tmpl":                filepath.Join(outputDir, ".env"),
 		"repository.go.tmpl":      filepath.Join(outputDir, "internal", "repository", "repository.go"),
 		"gitlab-ci.yml.tmpl":      filepath.Join(outputDir, ".gitlab-ci.yml"),
+		"grpc_test.go.tmpl":       filepath.Join(outputDir, "internal", "tests", "grpc_test.go"),
 	}
 
-	// Генерируем каждый файл из шаблона
 	for tmpl, outPath := range commonFiles {
-		// Создаем необходимые директории
 		if err := os.MkdirAll(filepath.Dir(outPath), 0755); err != nil {
 			return fmt.Errorf("failed to create directory for %s: %w", outPath, err)
 		}
 
-		// Генерируем файл из шаблона
-		vars := make(jet.VarMap)
-		if err := g.template.generateFromTemplateWithVars(tmpl, outPath, vars, models); err != nil {
+		if err := g.template.generateFromTemplateWithVars(tmpl, outPath, nil, models); err != nil {
 			return fmt.Errorf("failed to generate %s: %w", outPath, err)
 		}
 	}
@@ -82,28 +90,90 @@ func (g *Generator) generateCommonFiles(models []*Model, outputDir string) error
 }
 
 func (g *Generator) generateFilesForModel(model *Model, outputDir string, modelIndex int) error {
-	// Генерируем файлы для модели
 	files := map[string]string{
 		"repository_model.go.tmpl": filepath.Join(outputDir, "internal", "repository", strings.ToLower(model.Name), "repository.go"),
+		"handler.go.tmpl":          filepath.Join(outputDir, "internal", "handler", strings.ToLower(model.Name), "handler.go"),
 		"service.go.tmpl":          filepath.Join(outputDir, "internal", "service", strings.ToLower(model.Name), "service.go"),
 		"models.go.tmpl":           filepath.Join(outputDir, "internal", "models", strings.ToLower(model.Name)+".go"),
-		"migration.sql.tmpl":       filepath.Join(outputDir, "migrations", fmt.Sprintf("%d01_create_%s.sql", time.Now().Unix(), strings.ToLower(model.Name))),
-		"migration_fk.sql.tmpl":    filepath.Join(outputDir, "migrations", fmt.Sprintf("%d02_add_%s_foreign_keys.sql", time.Now().Unix(), strings.ToLower(model.Name))),
 		"grpc.go.tmpl":             filepath.Join(outputDir, "internal", "grpc", strings.ToLower(model.Name), "server.go"),
 	}
 
-	// Генерируем каждый файл из шаблона
 	for tmpl, outPath := range files {
-		// Создаем необходимые директории
 		if err := os.MkdirAll(filepath.Dir(outPath), 0755); err != nil {
 			return fmt.Errorf("failed to create directory for %s: %w", outPath, err)
 		}
 
-		// Генерируем файл из шаблона
-		vars := make(jet.VarMap)
-		if err := g.template.generateFromTemplateWithVars(tmpl, outPath, vars, model); err != nil {
+		if err := g.template.generateFromTemplateWithVars(tmpl, outPath, nil, model); err != nil {
 			return fmt.Errorf("failed to generate %s: %w", outPath, err)
 		}
+	}
+
+	return nil
+}
+
+// buildDependencyGraph строит граф зависимостей между моделями
+func (g *Generator) buildDependencyGraph(models []*Model) map[string][]string {
+	dependencies := make(map[string][]string)
+	for _, model := range models {
+		deps := []string{}
+		for _, field := range model.Fields {
+			if strings.HasSuffix(field.Name, "_id") {
+				referencedModel := strings.TrimSuffix(field.Name, "_id")
+				deps = append(deps, referencedModel)
+			}
+		}
+		dependencies[model.Name] = deps
+	}
+	return dependencies
+}
+
+// sortModelsByDependencies сортирует модели так, чтобы зависимые таблицы создавались после зависимостей
+func (g *Generator) sortModelsByDependencies(models []*Model) []*Model {
+	graph := g.buildDependencyGraph(models)
+	visited := make(map[string]bool)
+	sorted := make([]*Model, 0)
+
+	var visit func(model *Model)
+	visit = func(model *Model) {
+		if visited[model.Name] {
+			return
+		}
+		visited[model.Name] = true
+
+		for _, dep := range graph[model.Name] {
+			for _, m := range models {
+				if m.Name == dep {
+					visit(m)
+				}
+			}
+		}
+		sorted = append(sorted, model)
+	}
+
+	for _, model := range models {
+		visit(model)
+	}
+
+	return sorted
+}
+
+func (g *Generator) generateMigration(model *Model, outputDir string, index int) error {
+	now := time.Now()
+	// Используем базовый timestamp и добавляем индекс для сортировки
+	baseVersion := now.Format("20060102150405")
+	// Добавляем индекс в начало версии для правильной сортировки зависимостей
+	version := fmt.Sprintf("%s%02d", baseVersion, index+1)
+	migrationPath := filepath.Join(outputDir, "migrations")
+
+	if err := os.MkdirAll(migrationPath, 0755); err != nil {
+		return fmt.Errorf("failed to create migrations directory: %w", err)
+	}
+
+	filename := fmt.Sprintf("%s_create_%s.sql", version, strings.ToLower(model.Name))
+	fullPath := filepath.Join(migrationPath, filename)
+
+	if err := g.template.generateFromTemplateWithVars("migration.sql.tmpl", fullPath, nil, model); err != nil {
+		return fmt.Errorf("failed to generate migration file: %w", err)
 	}
 
 	return nil

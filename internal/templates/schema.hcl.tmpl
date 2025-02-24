@@ -1,0 +1,86 @@
+variable "db_name" {
+  type    = string
+  default = "postgres"
+}
+
+variable "db_user" {
+  type    = string
+  default = "postgres"
+}
+
+variable "db_pass" {
+  type    = string
+  default = "postgres"
+}
+
+env "local" {
+  src = "postgres://postgres:postgres@localhost:5432/postgres?sslmode=disable"
+  dev = "docker://postgres/15"
+  
+  migration {
+    dir = "file://migrations"
+  }
+  
+  format {
+    migrate {
+      diff = "sql"
+    }
+  }
+}
+
+schema "public" {
+  comment = "Public schema containing all application tables"
+}
+
+{{- range . }}
+{{- $model := . }}
+table "{{ toLower .Name }}s" {
+  schema = schema.public
+  
+  column "id" {
+    null = false
+    type = bigserial
+  }
+  
+  {{- range .Fields }}
+  {{- if ne .Name "id" }}
+  column "{{ toLower .DbName }}" {
+    null = true
+    type = {{ .SqlType }}
+    
+    {{- if hasSuffix .Name "_id" }}
+    reference {
+      table = "{{ toLower (trimSuffix .Name "_id") }}s"
+      column = "id"
+      on_delete = CASCADE
+    }
+    {{- end }}
+  }
+  {{- end }}
+  {{- end }}
+  
+  column "created_at" {
+    null = false
+    type = timestamptz
+    default = sql("CURRENT_TIMESTAMP")
+  }
+  
+  column "updated_at" {
+    null = false
+    type = timestamptz
+    default = sql("CURRENT_TIMESTAMP")
+  }
+
+  primary_key {
+    columns = [column.id]
+  }
+
+  {{- range .Fields }}
+  {{- if hasSuffix .Name "_id" }}
+  index "idx_{{ toLower $model.Name }}s_{{ toLower .Name }}" {
+    columns = [column.{{ toLower .DbName }}]
+  }
+  {{- end }}
+  {{- end }}
+}
+{{- end }} 

@@ -1,4 +1,4 @@
-package {{toLower(.Name)}}
+package {{toLower .Name}}
 
 import (
     "context"
@@ -20,16 +20,16 @@ func NewServer(repo *repository.Repository) *Server {
 
 func (s *Server) Create(ctx context.Context, req *proto.Create{{.Name}}Request) (*proto.{{.Name}}, error) {
     item := &models.{{.Name}}{
-        {{range .Fields}}
-        {{if (.Name != "Id" && .Name != "id")}}
-        {{toCamel(.Name)}}: req.{{toCamel(.Name)}},
-        {{end}}
-        {{end}}
+        {{- range .Fields}}
+        {{- if ne .Name "id"}}
+        {{toCamel .Name}}: req.{{toCamel .Name}},
+        {{- end}}
+        {{- end}}
     }
 
     result, err := s.repo.{{.Name}}.Create(ctx, item)
     if err != nil {
-        return nil, fmt.Errorf("failed to create {{toLower(.Name)}}: %w", err)
+        return nil, fmt.Errorf("failed to create {{toLower .Name}}: %w", err)
     }
 
     return convert{{.Name}}ToProto(result), nil
@@ -38,16 +38,16 @@ func (s *Server) Create(ctx context.Context, req *proto.Create{{.Name}}Request) 
 func (s *Server) Get(ctx context.Context, req *proto.Get{{.Name}}Request) (*proto.{{.Name}}, error) {
     result, err := s.repo.{{.Name}}.Get(ctx, req.Id)
     if err != nil {
-        return nil, fmt.Errorf("failed to get {{toLower(.Name)}}: %w", err)
+        return nil, fmt.Errorf("failed to get {{toLower .Name}}: %w", err)
     }
 
     return convert{{.Name}}ToProto(result), nil
 }
 
-func (s *Server) List(ctx context.Context, req *proto.List{{.Name}}Request) (*proto.List{{.Name}}Response, error) {
+func (s *Server) List(ctx context.Context, _ *proto.List{{.Name}}Request) (*proto.List{{.Name}}Response, error) {
     results, err := s.repo.{{.Name}}.List(ctx)
     if err != nil {
-        return nil, fmt.Errorf("failed to list {{toLower(.Name)}}s: %w", err)
+        return nil, fmt.Errorf("failed to list {{toLower .Name}}s: %w", err)
     }
 
     items := make([]*proto.{{.Name}}, len(results))
@@ -55,21 +55,23 @@ func (s *Server) List(ctx context.Context, req *proto.List{{.Name}}Request) (*pr
         items[i] = convert{{.Name}}ToProto(item)
     }
 
-    return &proto.List{{.Name}}Response{Items: items}, nil
+    return &proto.List{{.Name}}Response{
+        Items: items,
+    }, nil
 }
 
 func (s *Server) Update(ctx context.Context, req *proto.Update{{.Name}}Request) (*proto.{{.Name}}, error) {
     item := &models.{{.Name}}{
         Id: req.Id,
-        {{range .Fields}}
-        {{if (.Name != "Id" && .Name != "id")}}
-        {{toCamel(.Name)}}: req.{{toCamel(.Name)}},
-        {{end}}
-        {{end}}
+        {{- range .Fields}}
+        {{- if ne .Name "id"}}
+        {{toCamel .Name}}: req.{{toCamel .Name}},
+        {{- end}}
+        {{- end}}
     }
 
     if err := s.repo.{{.Name}}.Update(ctx, item); err != nil {
-        return nil, fmt.Errorf("failed to update {{toLower(.Name)}}: %w", err)
+        return nil, fmt.Errorf("failed to update {{toLower .Name}}: %w", err)
     }
 
     return convert{{.Name}}ToProto(item), nil
@@ -77,7 +79,7 @@ func (s *Server) Update(ctx context.Context, req *proto.Update{{.Name}}Request) 
 
 func (s *Server) Delete(ctx context.Context, req *proto.Delete{{.Name}}Request) (*proto.EmptyResponse, error) {
     if err := s.repo.{{.Name}}.Delete(ctx, req.Id); err != nil {
-        return nil, fmt.Errorf("failed to delete {{toLower(.Name)}}: %w", err)
+        return nil, fmt.Errorf("failed to delete {{toLower .Name}}: %w", err)
     }
 
     return &proto.EmptyResponse{}, nil
@@ -86,10 +88,10 @@ func (s *Server) Delete(ctx context.Context, req *proto.Delete{{.Name}}Request) 
 func convert{{.Name}}ToProto(item *models.{{.Name}}) *proto.{{.Name}} {
     return &proto.{{.Name}}{
         Id: item.Id,
-        {{range .Fields}}
-        {{if (.Name != "Id" && .Name != "id")}}
-        {{toCamel(.Name)}}: item.{{toCamel(.Name)}},
-        {{end}}
-        {{end}}
+        {{- range .Fields}}
+        {{- if ne .Name "id"}}
+        {{toCamel .Name}}: item.{{toCamel .Name}},
+        {{- end}}
+        {{- end}}
     }
 } 

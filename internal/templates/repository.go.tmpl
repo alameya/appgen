@@ -4,18 +4,18 @@ import (
 	"github.com/jmoiron/sqlx"
 	sq "github.com/Masterminds/squirrel"
 
-	{{range .}}
-	{{toLower(.Name)}}Repository "app/internal/repository/{{toLower(.Name)}}"
-	{{end}}
+	{{- range .}}
+	{{toLower .Name}}Repository "app/internal/repository/{{toLower .Name}}"
+	{{- end}}
 )
 
 // Repository объединяет все репозитории в единый интерфейс
 type Repository struct {
 	db *sqlx.DB
 
-	{{range .}}
-	{{.Name}} *{{toLower(.Name)}}Repository.{{.Name}}Repository
-	{{end}}
+	{{- range .}}
+	{{.Name}} *{{toLower .Name}}Repository.{{.Name}}Repository
+	{{- end}}
 }
 
 // NewRepository создает новый экземпляр Repository
@@ -25,8 +25,8 @@ func NewRepository(db *sqlx.DB) *Repository {
 
 	return &Repository{
 		db: db,
-		{{range .}}
-		{{.Name}}: {{toLower(.Name)}}Repository.New{{.Name}}Repository(db),
-		{{end}}
+		{{- range .}}
+		{{.Name}}: {{toLower .Name}}Repository.New{{.Name}}Repository(db),
+		{{- end}}
 	}
 } 

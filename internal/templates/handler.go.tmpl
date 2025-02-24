@@ -1,4 +1,4 @@
-package {{toLower(.Name)}}
+package {{toLower .Name}}
 
 import (
 	"context"
@@ -30,11 +30,11 @@ func New{{.Name}}Handler(service {{.Name}}Service) *{{.Name}}Handler {
 }
 
 func (h *{{.Name}}Handler) Register(r *mux.Router) {
-	r.HandleFunc("/{{toLower(.Name)}}", h.Create).Methods(http.MethodPost)
-	r.HandleFunc("/{{toLower(.Name)}}", h.List).Methods(http.MethodGet)
-	r.HandleFunc("/{{toLower(.Name)}}/{id}", h.Get).Methods(http.MethodGet)
-	r.HandleFunc("/{{toLower(.Name)}}/{id}", h.Update).Methods(http.MethodPut)
-	r.HandleFunc("/{{toLower(.Name)}}/{id}", h.Delete).Methods(http.MethodDelete)
+	r.HandleFunc("/{{toLower .Name}}", h.Create).Methods(http.MethodPost)
+	r.HandleFunc("/{{toLower .Name}}", h.List).Methods(http.MethodGet)
+	r.HandleFunc("/{{toLower .Name}}/{id}", h.Get).Methods(http.MethodGet)
+	r.HandleFunc("/{{toLower .Name}}/{id}", h.Update).Methods(http.MethodPut)
+	r.HandleFunc("/{{toLower .Name}}/{id}", h.Delete).Methods(http.MethodDelete)
 }
 
 func (h *{{.Name}}Handler) Create(w http.ResponseWriter, r *http.Request) {

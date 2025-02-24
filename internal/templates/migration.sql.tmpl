@@ -1,19 +1,42 @@
 -- +goose Up
 -- +goose StatementBegin
--- Create {{.Name}}s table
-CREATE TABLE IF NOT EXISTS {{toLower (.Name)}}s (
+-- Create {{.Name}} table
+CREATE TABLE IF NOT EXISTS {{toLower .Name}}s (
     id BIGSERIAL PRIMARY KEY,
-    {{- range .Fields}}
-    {{- if .Name != "id" }}
-    {{toLower (.DbName)}} {{.SqlType}},
-    {{- end}}
-    {{- end}}
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    {{- range .Fields }}
+    {{- if ne .Name "id" }}
+    {{toLower .DbName}} {{.SqlType}} {{if hasSuffix .Name "_id"}}REFERENCES {{toLower (trimSuffix .Name "_id")}}s(id) ON DELETE CASCADE{{end}},
+    {{- end }}
+    {{- end }}
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Create indexes
+{{- range .Fields }}
+{{- if hasSuffix .Name "_id" }}
+CREATE INDEX IF NOT EXISTS idx_{{toLower $.Name}}s_{{toLower .Name}} ON {{toLower $.Name}}s({{toLower .DbName}});
+{{- end }}
+{{- end }}
+
+-- Add updated_at trigger
+CREATE OR REPLACE FUNCTION update_updated_at_column()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = CURRENT_TIMESTAMP;
+    RETURN NEW;
+END;
+$$ language 'plpgsql';
+
+CREATE TRIGGER update_{{toLower .Name}}_updated_at
+    BEFORE UPDATE ON {{toLower .Name}}s
+    FOR EACH ROW
+    EXECUTE FUNCTION update_updated_at_column();
 -- +goose StatementEnd
 
 -- +goose Down
 -- +goose StatementBegin
-DROP TABLE IF EXISTS {{toLower (.Name)}}s;
+DROP TRIGGER IF EXISTS update_{{toLower .Name}}_updated_at ON {{toLower .Name}}s;
+DROP FUNCTION IF EXISTS update_updated_at_column();
+DROP TABLE IF EXISTS {{toLower .Name}}s CASCADE;
 -- +goose StatementEnd 

@@ -17,9 +17,9 @@ import (
 	"app/internal/proto"
 	"app/internal/repository"
 
-	{{range .}}
-	{{toLower(.Name)}}Grpc "app/internal/grpc/{{toLower(.Name)}}"
-	{{end}}
+	{{- range .}}
+	{{toLower .Name}}Grpc "app/internal/grpc/{{toLower .Name}}"
+	{{- end}}
 )
 
 func main() {
@@ -66,9 +66,11 @@ func main() {
 		log.Fatalf("Failed to listen: %v", err)
 	}
 	s := grpc.NewServer()
-	{{range .}}
-	proto.Register{{.Name}}ServiceServer(s, {{toLower(.Name)}}Grpc.NewServer(repo))
-	{{end}}
+
+	{{- range .}}
+	proto.Register{{.Name}}ServiceServer(s, {{toLower .Name}}Grpc.NewServer(repo))
+	{{- end}}
+
 	// Register reflection service on gRPC server
 	reflection.Register(s)
 
@@ -83,16 +85,16 @@ func main() {
 	gwmux := runtime.NewServeMux()
 	opts := []grpc.DialOption{grpc.WithInsecure()}
 
-	{{range .}}
+	{{- range .}}
 	// Register gRPC-Gateway handlers
 	if err := proto.Register{{.Name}}ServiceHandlerFromEndpoint(ctx, gwmux, "localhost:"+grpcPort, opts); err != nil {
 		log.Fatalf("Failed to register gateway: %v", err)
 	}
-	{{end}}
+	{{- end}}
 
 	// Start HTTP server
 	log.Printf("Server starting on :%s", port)
 	if err := http.ListenAndServe(":"+port, gwmux); err != nil {
 		log.Fatalf("Failed to start server: %v", err)
 	}
-} 
+}
