@@ -34,6 +34,7 @@ func (g *Generator) GenerateFromProtoFiles(protoFiles []string, outputDir string
 		if err != nil {
 			return fmt.Errorf("failed to parse %s: %w", protoPath, err)
 		}
+		fmt.Printf("Parsed models from %s: %+v\n", protoPath, models)
 		allModels = append(allModels, models...)
 	}
 
@@ -41,7 +42,7 @@ func (g *Generator) GenerateFromProtoFiles(protoFiles []string, outputDir string
 	sortedModels := g.sortModelsByDependencies(allModels)
 
 	if err := g.generateCommonFiles(allModels, outputDir); err != nil {
-		return err
+		return fmt.Errorf("failed to generate common files: %w", err)
 	}
 
 	// Сначала генерируем все файлы кроме миграций

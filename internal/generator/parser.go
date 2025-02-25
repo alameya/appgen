@@ -20,6 +20,11 @@ func NewParser() *Parser {
 }
 
 func (p *Parser) Parse(protoPath string) ([]*Model, error) {
+	if protoPath == "" {
+		return nil, fmt.Errorf("protoPath is empty")
+	}
+
+	fmt.Printf("Parsing proto file: %s\n", protoPath)
 	// Компилируем proto файл
 	cmd := exec.Command("protoc",
 		"--descriptor_set_out=/tmp/proto.pb",
@@ -59,12 +64,15 @@ func (p *Parser) Parse(protoPath string) ([]*Model, error) {
 		message := messages.Get(i)
 		name := string(message.Name())
 
-		fmt.Printf("Parsing message: %s\n", name)
+		fmt.Printf("Found message: %s\n", name)
 
 		// Пропускаем сообщения запросов и ответов
 		if strings.HasSuffix(name, "Request") || strings.HasSuffix(name, "Response") {
+			fmt.Printf("Skipping message %s (request/response)\n", name)
 			continue
 		}
+
+		fmt.Printf("Parsing message: %s\n", name)
 
 		model := &Model{
 			Name:   name,

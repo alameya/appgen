@@ -10,13 +10,31 @@ if ! command -v protoc &> /dev/null; then
 fi
 
 # Install required Go tools if not installed
-go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.32.0
-go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.3.0
-go install github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-grpc-gateway@v2.19.1
-go install github.com/pressly/goose/v3/cmd/goose@latest
+# Проверяем и устанавливаем необходимые инструменты Go
+if ! command -v protoc-gen-go &> /dev/null; then
+    echo "Installing protoc-gen-go..."
+    go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.32.0
+fi
+
+if ! command -v protoc-gen-go-grpc &> /dev/null; then
+    echo "Installing protoc-gen-go-grpc..."
+    go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.3.0
+fi
+
+if ! command -v protoc-gen-grpc-gateway &> /dev/null; then
+    echo "Installing protoc-gen-grpc-gateway..."
+    go install github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-grpc-gateway@v2.19.1
+fi
+
+if ! command -v goose &> /dev/null; then
+    echo "Installing goose..."
+    go install github.com/pressly/goose/v3/cmd/goose@latest
+fi
 
 # Install grpc-gateway
-cd out && go get github.com/grpc-ecosystem/grpc-gateway/v2 && cd ..
+if [ -d "out" ]; then
+    cd out && go get github.com/grpc-ecosystem/grpc-gateway/v2 && cd ..
+fi
 
 # Clean output directory
 echo "Cleaning output directory..."
@@ -33,28 +51,43 @@ mkdir -p out/internal/models
 mkdir -p out/internal/grpc
 mkdir -p out/internal/tests
 mkdir -p out/migrations
+mkdir -p out/internal/proto
 
 # Generate proto files
 echo "Generating proto files..."
+# Проверяем, что файлы существуют
+echo "Proto files found:"
+ls -la proto/*.proto
+
 # Generate gRPC code from proto files
+PROTO_FILES=$(find proto -name '*.proto')
+if [ -z "$PROTO_FILES" ]; then
+  echo "Error: No proto files found in proto/"
+  exit 1
+fi
+
+echo "Processing proto files:"
+echo "$PROTO_FILES"
+
 protoc -I . \
     -I$(go list -f '{{.Dir}}' -m github.com/grpc-ecosystem/grpc-gateway/v2)/runtime/internal/examplepb \
     -I$(go list -f '{{.Dir}}' -m github.com/grpc-ecosystem/grpc-gateway/v2)/.. \
-    --go_out=out \
+    --go_out=out/internal \
     --go_opt=paths=source_relative \
-    --go-grpc_out=out \
+    --go-grpc_out=out/internal \
     --go-grpc_opt=paths=source_relative \
-    --grpc-gateway_out=out \
+    --grpc-gateway_out=out/internal \
     --grpc-gateway_opt=paths=source_relative \
-    proto/service.proto
+    $(echo "$PROTO_FILES" | tr '\n' ' ')
 
 # Move generated proto files to correct location
-mkdir -p out/internal/proto
-mv out/proto/* out/internal/proto/
-rm -rf out/proto
+
 
 # Generate application code
-go run cmd/generator/main.go -proto proto/service.proto -output out/
+# Находим все proto файлы и передаем их генератору
+PROTO_FILES=$(find proto -name '*.proto' | tr '\n' ',')
+echo "Found proto files: $PROTO_FILES"
+go run cmd/generator/main.go -proto "$PROTO_FILES" -output out/
 
 # Format generated code
 echo "Formatting generated code..."
