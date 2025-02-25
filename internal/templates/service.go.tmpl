@@ -1,54 +1,35 @@
-package service
+package {{toLower .Name}}
 
 import (
 	"context"
-
 	"app/internal/models"
-	"app/internal/interfaces"
+	"app/internal/repository"
 )
 
-type {{toLower .Name}}Service struct {
-	repo interfaces.{{.Name}}Repository
+type Service struct {
+	repo *repository.Repository
 }
 
-func New{{.Name}}Service(repo interfaces.{{.Name}}Repository) interfaces.{{.Name}}Service {
-	return &{{toLower .Name}}Service{repo: repo}
+func NewService(repo *repository.Repository) *Service {
+	return &Service{repo: repo}
 }
 
-func (s *{{toLower .Name}}Service) Create(ctx context.Context, item *models.{{.Name}}) (*models.{{.Name}}, error) {
-	result, err := s.repo.Create(ctx, item)
-	if err != nil {
-		return nil, err
-	}
-	return result, nil
+func (s *Service) Create(ctx context.Context, item *models.{{.Name}}) (*models.{{.Name}}, error) {
+	return s.repo.{{.Name}}.Create(ctx, item)
 }
 
-func (s *{{toLower .Name}}Service) Get(ctx context.Context, id int64) (*models.{{.Name}}, error) {
-	result, err := s.repo.Get(ctx, id)
-	if err != nil {
-		return nil, err
-	}
-	return result, nil
+func (s *Service) Get(ctx context.Context, id int64) (*models.{{.Name}}, error) {
+	return s.repo.{{.Name}}.Get(ctx, id)
 }
 
-func (s *{{toLower .Name}}Service) List(ctx context.Context) ([]*models.{{.Name}}, error) {
-	results, err := s.repo.List(ctx)
-	if err != nil {
-		return nil, err
-	}
-	return results, nil
+func (s *Service) List(ctx context.Context) ([]*models.{{.Name}}, error) {
+	return s.repo.{{.Name}}.List(ctx)
 }
 
-func (s *{{toLower .Name}}Service) Update(ctx context.Context, item *models.{{.Name}}) error {
-	if err := s.repo.Update(ctx, item); err != nil {
-		return err
-	}
-	return nil
+func (s *Service) Update(ctx context.Context, item *models.{{.Name}}) error {
+	return s.repo.{{.Name}}.Update(ctx, item)
 }
 
-func (s *{{toLower .Name}}Service) Delete(ctx context.Context, id int64) error {
-	if err := s.repo.Delete(ctx, id); err != nil {
-		return err
-	}
-	return nil
+func (s *Service) Delete(ctx context.Context, id int64) error {
+	return s.repo.{{.Name}}.Delete(ctx, id)
 } 

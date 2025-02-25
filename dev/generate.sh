@@ -44,8 +44,8 @@ mkdir -p out/
 # Create required directories
 echo "Creating directories..."
 mkdir -p out/cmd/app
-mkdir -p out/internal/handler
-mkdir -p out/internal/service
+mkdir -p out/internal/service/courier
+mkdir -p out/internal/service/location
 mkdir -p out/internal/repository
 mkdir -p out/internal/models
 mkdir -p out/internal/grpc

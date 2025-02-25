@@ -1,97 +1,97 @@
 package {{toLower .Name}}
 
 import (
-    "context"
-    "fmt"
+	"context"
+	"fmt"
 
-    "app/internal/proto"
-    "app/internal/interfaces"
-    "app/internal/models"
+	"app/internal/proto"
+	"app/internal/models"
+	"app/internal/service/{{toLower .Name}}"
 )
 
 type Server struct {
-    proto.Unimplemented{{.Name}}ServiceServer
-    service interfaces.{{.Name}}Service
+	proto.Unimplemented{{.Name}}ServiceServer
+	service *{{toLower .Name}}.Service
 }
 
-func NewServer(service interfaces.{{.Name}}Service) *Server {
-    return &Server{service: service}
+func NewServer(service *{{toLower .Name}}.Service) *Server {
+	return &Server{service: service}
 }
 
 func (s *Server) Create(ctx context.Context, req *proto.Create{{.Name}}Request) (*proto.{{.Name}}, error) {
-    item := &models.{{.Name}}{
-        {{- range .Fields}}
-        {{- if ne .Name "id"}}
-        {{toCamel .Name}}: req.{{toCamel .Name}},
-        {{- end}}
-        {{- end}}
-    }
+	item := &models.{{.Name}}{
+		{{- range .Fields}}
+		{{- if ne .Name "id"}}
+		{{toCamel .Name}}: req.{{toCamel .Name}},
+		{{- end}}
+		{{- end}}
+	}
 
-    result, err := s.service.Create(ctx, item)
-    if err != nil {
-        return nil, fmt.Errorf("failed to create {{toLower .Name}}: %w", err)
-    }
+	result, err := s.service.Create(ctx, item)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create {{toLower .Name}}: %w", err)
+	}
 
-    return convert{{.Name}}ToProto(result), nil
+	return convert{{.Name}}ToProto(result), nil
 }
 
 func (s *Server) Get(ctx context.Context, req *proto.Get{{.Name}}Request) (*proto.{{.Name}}, error) {
-    result, err := s.service.Get(ctx, req.Id)
-    if err != nil {
-        return nil, fmt.Errorf("failed to get {{toLower .Name}}: %w", err)
-    }
+	result, err := s.service.Get(ctx, req.Id)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get {{toLower .Name}}: %w", err)
+	}
 
-    return convert{{.Name}}ToProto(result), nil
+	return convert{{.Name}}ToProto(result), nil
 }
 
 func (s *Server) List(ctx context.Context, _ *proto.List{{.Name}}Request) (*proto.List{{.Name}}Response, error) {
-    results, err := s.service.List(ctx)
-    if err != nil {
-        return nil, fmt.Errorf("failed to list {{toLower .Name}}s: %w", err)
-    }
+	results, err := s.service.List(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list {{toLower .Name}}s: %w", err)
+	}
 
-    items := make([]*proto.{{.Name}}, len(results))
-    for i, item := range results {
-        items[i] = convert{{.Name}}ToProto(item)
-    }
+	items := make([]*proto.{{.Name}}, len(results))
+	for i, item := range results {
+		items[i] = convert{{.Name}}ToProto(item)
+	}
 
-    return &proto.List{{.Name}}Response{
-        Items: items,
-    }, nil
+	return &proto.List{{.Name}}Response{
+		Items: items,
+	}, nil
 }
 
 func (s *Server) Update(ctx context.Context, req *proto.Update{{.Name}}Request) (*proto.{{.Name}}, error) {
-    item := &models.{{.Name}}{
-        Id: req.Id,
-        {{- range .Fields}}
-        {{- if ne .Name "id"}}
-        {{toCamel .Name}}: req.{{toCamel .Name}},
-        {{- end}}
-        {{- end}}
-    }
+	item := &models.{{.Name}}{
+		Id: req.Id,
+		{{- range .Fields}}
+		{{- if ne .Name "id"}}
+		{{toCamel .Name}}: req.{{toCamel .Name}},
+		{{- end}}
+		{{- end}}
+	}
 
-    if err := s.service.Update(ctx, item); err != nil {
-        return nil, fmt.Errorf("failed to update {{toLower .Name}}: %w", err)
-    }
+	if err := s.service.Update(ctx, item); err != nil {
+		return nil, fmt.Errorf("failed to update {{toLower .Name}}: %w", err)
+	}
 
-    return convert{{.Name}}ToProto(item), nil
+	return convert{{.Name}}ToProto(item), nil
 }
 
 func (s *Server) Delete(ctx context.Context, req *proto.Delete{{.Name}}Request) (*proto.EmptyResponse, error) {
-    if err := s.service.Delete(ctx, req.Id); err != nil {
-        return nil, fmt.Errorf("failed to delete {{toLower .Name}}: %w", err)
-    }
+	if err := s.service.Delete(ctx, req.Id); err != nil {
+		return nil, fmt.Errorf("failed to delete {{toLower .Name}}: %w", err)
+	}
 
-    return &proto.EmptyResponse{}, nil
+	return &proto.EmptyResponse{}, nil
 }
 
 func convert{{.Name}}ToProto(item *models.{{.Name}}) *proto.{{.Name}} {
-    return &proto.{{.Name}}{
-        Id: item.Id,
-        {{- range .Fields}}
-        {{- if ne .Name "id"}}
-        {{toCamel .Name}}: item.{{toCamel .Name}},
-        {{- end}}
-        {{- end}}
-    }
+	return &proto.{{.Name}}{
+		Id: item.Id,
+		{{- range .Fields}}
+		{{- if ne .Name "id"}}
+		{{toCamel .Name}}: item.{{toCamel .Name}},
+		{{- end}}
+		{{- end}}
+	}
 } 

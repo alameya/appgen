@@ -82,7 +82,11 @@ func (g *Generator) generateCommonFiles(models []*Model, outputDir string) error
 			return fmt.Errorf("failed to create directory for %s: %w", outPath, err)
 		}
 
-		if err := g.template.generateFromTemplateWithVars(tmpl, outPath, nil, models); err != nil {
+		data := map[string]interface{}{
+			"Models": models,
+		}
+
+		if err := g.template.generateFromTemplateWithVars(tmpl, outPath, data, models); err != nil {
 			return fmt.Errorf("failed to generate %s: %w", outPath, err)
 		}
 	}
@@ -93,22 +97,22 @@ func (g *Generator) generateCommonFiles(models []*Model, outputDir string) error
 func (g *Generator) generateFilesForModel(model *Model, outputDir string, modelIndex int) error {
 	files := map[string]string{
 		"repository_model.go.tmpl": filepath.Join(outputDir, "internal", "repository", strings.ToLower(model.Name), "repository.go"),
-		"handler.go.tmpl":          filepath.Join(outputDir, "internal", "handler", strings.ToLower(model.Name), "handler.go"),
 		"models.go.tmpl":           filepath.Join(outputDir, "internal", "models", strings.ToLower(model.Name)+".go"),
 		"grpc.go.tmpl":             filepath.Join(outputDir, "internal", "grpc", strings.ToLower(model.Name), "server.go"),
 	}
 
 	// Генерируем файл сервиса
-	servicePath := filepath.Join(outputDir, "internal", "service")
+	servicePath := filepath.Join(outputDir, "internal", "service", strings.ToLower(model.Name))
 	if err := os.MkdirAll(servicePath, 0755); err != nil {
 		return fmt.Errorf("failed to create service directory: %w", err)
 	}
 
 	if err := g.template.generateFromTemplateWithVars("service.go.tmpl",
-		filepath.Join(servicePath, strings.ToLower(model.Name)+".go"), nil, model); err != nil {
+		filepath.Join(servicePath, "service.go"), nil, model); err != nil {
 		return fmt.Errorf("failed to generate service file: %w", err)
 	}
 
+	// Генерируем остальные файлы
 	for tmpl, outPath := range files {
 		if err := os.MkdirAll(filepath.Dir(outPath), 0755); err != nil {
 			return fmt.Errorf("failed to create directory for %s: %w", outPath, err)

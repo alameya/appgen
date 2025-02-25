@@ -17,9 +17,8 @@ import (
 
 	"app/internal/proto"
 	"app/internal/repository"
-	"app/internal/service"
-
 	{{- range .}}
+	"app/internal/service/{{toLower .Name}}"
 	{{toLower .Name}}Grpc "app/internal/grpc/{{toLower .Name}}"
 	{{- end}}
 )
@@ -67,7 +66,7 @@ func main() {
 
 	// Create services
 	{{- range .}}
-	{{toLower .Name}}Service := service.New{{.Name}}Service(repo.{{.Name}})
+	{{toLower .Name}}Service := {{toLower .Name}}.NewService(repo)
 	{{- end}}
 
 	// Create context with cancellation
