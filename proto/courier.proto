@@ -2,46 +2,7 @@ syntax = "proto3";
 
 package proto;
 
-import "google/api/annotations.proto";
-import "proto/common.proto";
-
 option go_package = "app/internal/proto";
-
-// Courier service definition
-service CourierService {
-  // Create a new courier
-  rpc Create(CreateCourierRequest) returns (Courier) {
-  }
-
-  // Get courier by ID
-  rpc Get(GetCourierRequest) returns (Courier) {
-    option (google.api.http) = {
-      get: "/api/v1/couriers/{id}"
-    };
-  }
-
-  // List all couriers
-  rpc List(ListCourierRequest) returns (ListCourierResponse) {
-    option (google.api.http) = {
-      get: "/api/v1/couriers"
-    };
-  }
-
-  // Update courier
-  rpc Update(UpdateCourierRequest) returns (Courier) {
-    option (google.api.http) = {
-      put: "/api/v1/couriers/{id}"
-      body: "*"
-    };
-  }
-
-  // Delete courier
-  rpc Delete(DeleteCourierRequest) returns (EmptyResponse) {
-    option (google.api.http) = {
-      delete: "/api/v1/couriers/{id}"
-    };
-  }
-}
 
 // Courier message
 message Courier {
@@ -52,42 +13,3 @@ message Courier {
   string status = 5;
   int64 location_id = 6;
 }
-
-// Create request
-message CreateCourierRequest {
-  string name = 1;
-  string phone = 2;
-  string email = 3;
-  string status = 4;
-  int64 location_id = 5;
-}
-
-// Get request
-message GetCourierRequest {
-  int64 id = 1;
-}
-
-// List request
-message ListCourierRequest {}
-
-// List response
-message ListCourierResponse {
-  repeated Courier items = 1;
-}
-
-// Update request
-message UpdateCourierRequest {
-  int64 id = 1;
-  string name = 2;
-  string phone = 3;
-  string email = 4;
-  string status = 5;
-  int64 location_id = 6;
-}
-
-// Delete request
-message DeleteCourierRequest {
-  int64 id = 1;
-}
-
-

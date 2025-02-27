@@ -3,49 +3,8 @@ syntax = "proto3";
 package proto;
 
 import "google/api/annotations.proto";
-import "proto/common.proto";
 
 option go_package = "app/internal/proto";
-
-// Location service definition
-service LocationService {
-  // Create a new location
-  rpc Create(CreateLocationRequest) returns (Location) {
-    option (google.api.http) = {
-      post: "/api/v1/locations"
-      body: "*"
-    };
-  }
-
-  // Get location by ID
-  rpc Get(GetLocationRequest) returns (Location) {
-    option (google.api.http) = {
-      get: "/api/v1/locations/{id}"
-    };
-  }
-
-  // List all locations
-  rpc List(ListLocationRequest) returns (ListLocationResponse) {
-    option (google.api.http) = {
-      get: "/api/v1/locations"
-    };
-  }
-
-  // Update location
-  rpc Update(UpdateLocationRequest) returns (Location) {
-    option (google.api.http) = {
-      put: "/api/v1/locations/{id}"
-      body: "*"
-    };
-  }
-
-  // Delete location
-  rpc Delete(DeleteLocationRequest) returns (EmptyResponse) {
-    option (google.api.http) = {
-      delete: "/api/v1/locations/{id}"
-    };
-  }
-}
 
 
 // Location message
@@ -55,36 +14,3 @@ message Location {
   double latitude = 3;
   double longitude = 4;
 }
-
-// Create request
-message CreateLocationRequest {
-  string address = 1;
-  double latitude = 2;
-  double longitude = 3;
-}
-
-// Get request
-message GetLocationRequest {
-  int64 id = 1;
-}
-
-// List request
-message ListLocationRequest {}
-
-// List response
-message ListLocationResponse {
-  repeated Location items = 1;
-}
-
-// Update request
-message UpdateLocationRequest {
-  int64 id = 1;
-  string address = 2;
-  double latitude = 3;
-  double longitude = 4;
-}
-
-// Delete request
-message DeleteLocationRequest {
-  int64 id = 1;
-} 

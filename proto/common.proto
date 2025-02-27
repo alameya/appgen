@@ -1,8 +1,0 @@
-syntax = "proto3";
-
-package proto;
-
-option go_package = "app/internal/proto";
-
-// EmptyResponse message used for operations that don't return data
-message EmptyResponse {} 

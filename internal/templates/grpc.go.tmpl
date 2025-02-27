@@ -19,10 +19,14 @@ func NewServer(service *{{toLower .Name}}.Service) *Server {
 }
 
 func (s *Server) Create(ctx context.Context, req *proto.Create{{.Name}}Request) (*proto.{{.Name}}, error) {
+	if req.{{.Name}} == nil {
+		return nil, fmt.Errorf("{{toLower .Name}} is required")
+	}
+
 	item := &models.{{.Name}}{
 		{{- range .Fields}}
 		{{- if ne .Name "id"}}
-		{{toCamel .Name}}: req.{{toCamel .Name}},
+		{{toCamel .Name}}: req.{{toCamel $.Name}}.{{toCamel .Name}},
 		{{- end}}
 		{{- end}}
 	}
@@ -61,11 +65,15 @@ func (s *Server) List(ctx context.Context, _ *proto.List{{.Name}}Request) (*prot
 }
 
 func (s *Server) Update(ctx context.Context, req *proto.Update{{.Name}}Request) (*proto.{{.Name}}, error) {
+	if req.{{.Name}} == nil {
+		return nil, fmt.Errorf("{{toLower .Name}} is required")
+	}
+
 	item := &models.{{.Name}}{
 		Id: req.Id,
 		{{- range .Fields}}
 		{{- if ne .Name "id"}}
-		{{toCamel .Name}}: req.{{toCamel .Name}},
+		{{toCamel .Name}}: req.{{toCamel $.Name}}.{{toCamel .Name}},
 		{{- end}}
 		{{- end}}
 	}

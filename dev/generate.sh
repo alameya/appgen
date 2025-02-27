@@ -55,30 +55,21 @@ mkdir -p out/internal/proto
 
 # Generate proto files
 echo "Generating proto files..."
-# Проверяем, что файлы существуют
-echo "Proto files found:"
-ls -la proto/*.proto
 
-# Generate gRPC code from proto files
-PROTO_FILES=$(find proto -name '*.proto')
-if [ -z "$PROTO_FILES" ]; then
-  echo "Error: No proto files found in proto/"
-  exit 1
-fi
+# Generate gRPC and Gateway code
+go run cmd/protogen/main.go -source proto -output out/internal/proto
 
-echo "Processing proto files:"
-echo "$PROTO_FILES"
-
-protoc -I . \
+# Generate proto files using protogen
+protoc -I out/internal/proto \
     -I$(go list -f '{{.Dir}}' -m github.com/grpc-ecosystem/grpc-gateway/v2)/runtime/internal/examplepb \
     -I$(go list -f '{{.Dir}}' -m github.com/grpc-ecosystem/grpc-gateway/v2)/.. \
-    --go_out=out/internal \
+    --go_out=out/internal/proto \
     --go_opt=paths=source_relative \
-    --go-grpc_out=out/internal \
+    --go-grpc_out=out/internal/proto \
     --go-grpc_opt=paths=source_relative \
-    --grpc-gateway_out=out/internal \
+    --grpc-gateway_out=out/internal/proto \
     --grpc-gateway_opt=paths=source_relative \
-    $(echo "$PROTO_FILES" | tr '\n' ' ')
+    out/internal/proto/*.proto
 
 # Move generated proto files to correct location
 
